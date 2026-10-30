@@ -1,0 +1,29 @@
+﻿# Secrets / keys - never commit
+*.der
+*.pem
+*.jks
+*.keystore
+developer_key*
+local.properties
+keystore.properties
+.env
+
+# Build output
+build/
+bin/
+.gradle/
+*.apk
+*.prg
+*.iq
+
+# Tools / IDE
+.idea/
+.vscode/
+tools/
+tidal-api.properties
+
+# Private notes and the Phase 0 test app (kept locally, not published)
+claude.md
+CLAUDE.md
+spike/
+dist/

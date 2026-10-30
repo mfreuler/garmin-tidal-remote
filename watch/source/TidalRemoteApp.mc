@@ -1,0 +1,112 @@
+import Toybox.Application;
+import Toybox.Communications;
+import Toybox.Lang;
+import Toybox.WatchUi;
+
+//! Watch side of Tidal Remote: menus on the watch, commands go to the phone app.
+//! Watch -> phone:  ["menu"] | ["mix", name] | ["genre", name] | ["search", term] | ["radio"]
+//!                  | ["shuffle"] | ["playpause"] | ["next"] | ["prev"] | ["info"]
+//! Phone -> watch:  ["menu", mixes[], genres[], searchTerms[], radioReady] | ["ok", text] | ["err", text]
+//! On newer watches (e.g. Fenix 7 Pro) a device app can also have a glance line, so one app covers both.
+(:glance)
+class TidalRemoteApp extends Application.AppBase {
+    private var _result as ResultView?;
+    private var _menu as WatchUi.Menu2?;
+
+    function initialize() {
+        AppBase.initialize();
+    }
+
+    //! Only called when the full app opens, not for the glance line.
+    function getInitialView() as [Views] or [Views, InputDelegates] {
+        Communications.registerForPhoneAppMessages(method(:onPhone));
+        // Refresh the menu lists in the background; the stored copy is used until the reply arrives.
+        Communications.transmit(["menu"], null, new SilentListener());
+        var menu = buildMainMenu();
+        _menu = menu;
+        return [menu, new MainMenuDelegate()];
+    }
+
+    function getGlanceView() as [WatchUi.GlanceView] or [WatchUi.GlanceView, WatchUi.GlanceViewDelegate] or Null {
+        return [new TidalGlanceView()];
+    }
+
+    //! Sends a command to the phone and shows the result screen.
+    function sendCommand(cmd as Array<String>, title as String) as Void {
+        var view = new ResultView(title, !"info".equals(cmd[0]));
+        _result = view;
+        WatchUi.pushView(view, new WatchUi.BehaviorDelegate(), WatchUi.SLIDE_LEFT);
+        Communications.transmit(cmd, null, new CommandListener(view));
+    }
+
+    //! Track radio only works once the Tidal API login is set up on the phone; hide it until then.
+    private function updateRadio(ready as Boolean) as Void {
+        Application.Storage.setValue(Lists.RADIO_READY, ready);
+        var menu = _menu;
+        if (!ready && menu != null) {
+            var index = menu.findItemById(:radio);
+            if (index >= 0) {
+                menu.deleteItem(index);
+                WatchUi.requestUpdate();
+            }
+        }
+    }
+
+    function onPhone(msg as Communications.PhoneAppMessage) as Void {
+        var data = msg.data;
+        if (!(data instanceof Array) || data.size() == 0) {
+            return;
+        }
+        // The phone's list may arrive wrapped in an outer array.
+        if (data.size() == 1 && data[0] instanceof Array) {
+            data = data[0] as Array;
+        }
+        var kind = data[0];
+        if ("menu".equals(kind) && data.size() >= 4) {
+            Lists.save(Lists.MIXES, data[1]);
+            Lists.save(Lists.GENRES, data[2]);
+            Lists.save(Lists.SEARCH, data[3]);
+            if (data.size() > 4) {
+                updateRadio(data[4] == true);
+            }
+        } else if (_result != null && ("ok".equals(kind) || "err".equals(kind))) {
+            var text = data.size() > 1 ? data[1].toString() : "";
+            (_result as ResultView).show("ok".equals(kind), text);
+        }
+    }
+}
+
+//! Silent transmit, used for the background menu refresh.
+class SilentListener extends Communications.ConnectionListener {
+    function initialize() {
+        ConnectionListener.initialize();
+    }
+
+    function onComplete() as Void {
+    }
+
+    function onError() as Void {
+    }
+}
+
+//! Reports a transmit failure on the result screen.
+class CommandListener extends Communications.ConnectionListener {
+    private var _view as ResultView;
+
+    function initialize(view as ResultView) {
+        ConnectionListener.initialize();
+        _view = view;
+    }
+
+    function onComplete() as Void {
+        _view.sent();
+    }
+
+    function onError() as Void {
+        _view.show(false, "Phone not reachable");
+    }
+}
+
+function getTidalApp() as TidalRemoteApp {
+    return Application.getApp() as TidalRemoteApp;
+}
