@@ -1,6 +1,7 @@
 import Toybox.Application;
 import Toybox.Communications;
 import Toybox.Lang;
+import Toybox.Timer;
 import Toybox.WatchUi;
 
 //! Watch side of Tidal Remote: menus on the watch, commands go to the phone app.
@@ -12,6 +13,9 @@ import Toybox.WatchUi;
 class TidalRemoteApp extends Application.AppBase {
     private var _result as ResultView?;
     private var _menu as WatchUi.Menu2?;
+    // Created in getInitialView: the glance line can't load the menu classes.
+    private var _title as StatusTitle?;
+    private var _timer as Timer.Timer?;
 
     function initialize() {
         AppBase.initialize();
@@ -21,8 +25,14 @@ class TidalRemoteApp extends Application.AppBase {
     function getInitialView() as [Views] or [Views, InputDelegates] {
         Communications.registerForPhoneAppMessages(method(:onPhone));
         // Refresh the menu lists in the background; the stored copy is used until the reply arrives.
+        // Its reply also sets the connection dot next to the title.
         Communications.transmit(["menu"], null, new SilentListener());
-        var menu = buildMainMenu();
+        var timer = new Timer.Timer();
+        timer.start(method(:onNoReply), 10000, false);
+        _timer = timer;
+        var title = new StatusTitle();
+        _title = title;
+        var menu = buildMainMenu(title);
         _menu = menu;
         return [menu, new MainMenuDelegate()];
     }
@@ -37,6 +47,28 @@ class TidalRemoteApp extends Application.AppBase {
         _result = view;
         WatchUi.pushView(view, new WatchUi.BehaviorDelegate(), WatchUi.SLIDE_LEFT);
         Communications.transmit(cmd, null, new CommandListener(view));
+    }
+
+    //! Updates the dot next to the menu title: did the phone app answer?
+    function setReachable(reachable as Boolean) as Void {
+        var timer = _timer;
+        if (timer != null) {
+            timer.stop();
+            _timer = null;
+        }
+        var title = _title;
+        if (title != null) {
+            title.status = reachable ? StatusTitle.OK : StatusTitle.FAILED;
+            WatchUi.requestUpdate();
+        }
+    }
+
+    function onNoReply() as Void {
+        _timer = null;
+        var title = _title;
+        if (title != null && title.status == StatusTitle.CHECKING) {
+            setReachable(false);
+        }
     }
 
     //! Track radio only works once the Tidal API login is set up on the phone; hide it until then.
@@ -62,6 +94,7 @@ class TidalRemoteApp extends Application.AppBase {
             data = data[0] as Array;
         }
         var kind = data[0];
+        setReachable(true);
         if ("menu".equals(kind) && data.size() >= 4) {
             Lists.save(Lists.MIXES, data[1]);
             Lists.save(Lists.GENRES, data[2]);
@@ -86,6 +119,7 @@ class SilentListener extends Communications.ConnectionListener {
     }
 
     function onError() as Void {
+        getTidalApp().setReachable(false);
     }
 }
 
@@ -104,6 +138,7 @@ class CommandListener extends Communications.ConnectionListener {
 
     function onError() as Void {
         _view.show(false, "Phone not reachable");
+        getTidalApp().setReachable(false);
     }
 }
 

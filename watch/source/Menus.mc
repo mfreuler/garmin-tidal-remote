@@ -1,4 +1,5 @@
 import Toybox.Application;
+import Toybox.Graphics;
 import Toybox.Lang;
 import Toybox.WatchUi;
 
@@ -29,8 +30,31 @@ module Lists {
     }
 }
 
-function buildMainMenu() as WatchUi.Menu2 {
-    var menu = new WatchUi.Menu2({ :title => "Tidal" });
+//! Menu title with a dot showing whether the phone app answered: grey while waiting, green, or red.
+class StatusTitle extends WatchUi.Drawable {
+    enum { CHECKING, OK, FAILED }
+    public var status as Number = CHECKING;
+
+    function initialize() {
+        Drawable.initialize({});
+    }
+
+    function draw(dc as Graphics.Dc) as Void {
+        var text = "Tidal";
+        var font = Graphics.FONT_SMALL;
+        var x = dc.getWidth() / 2;
+        var y = dc.getHeight() / 2;
+        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(x, y, font, text, Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+        var r = dc.getFontHeight(font) / 4;
+        var color = status == OK ? Graphics.COLOR_GREEN : (status == FAILED ? Graphics.COLOR_RED : Graphics.COLOR_LT_GRAY);
+        dc.setColor(color, Graphics.COLOR_TRANSPARENT);
+        dc.fillCircle(x + dc.getTextWidthInPixels(text, font) / 2 + r * 3, y, r);
+    }
+}
+
+function buildMainMenu(title as StatusTitle) as WatchUi.Menu2 {
+    var menu = new WatchUi.Menu2({ :title => title });
     menu.addItem(new WatchUi.MenuItem("My Mix", null, :mix, null));
     menu.addItem(new WatchUi.MenuItem("Genre", "random playlist", :genre, null));
     menu.addItem(new WatchUi.MenuItem("Search", "random playlist", :search, null));
