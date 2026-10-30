@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Launcher icon foreground: equaliser bars as a mountain ridge, in the style of the project's GitHub avatar.
+     Drawn on a 400-unit square, centred in the 600-unit adaptive-icon canvas so the launcher mask shows all of it. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="600"
+    android:viewportHeight="600">
+    <group android:translateX="100" android:translateY="100">
+        <path android:fillColor="#F0786E" android:pathData="M16,255h25V500h-25Z M45,215h25V500h-25Z M74,185h25V500h-25Z M103,205h25V500h-25Z M132,230h25V500h-25Z M161,175h25V500h-25Z M190,140h25V500h-25Z M219,120h25V500h-25Z M248,160h25V500h-25Z M277,190h25V500h-25Z M306,175h25V500h-25Z M335,200h25V500h-25Z M364,230h25V500h-25Z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M-100,432L0,340L78,262L110,295L195,200L258,277L305,244L400,332L500,420V500H-100Z" />
+        <path android:fillColor="#EBE8E8" android:pathData="M195,200L215,270L258,277Z M305,244L330,302L400,332Z" />
+    </group>
+</vector>

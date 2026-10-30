@@ -15,7 +15,7 @@
 
     <application
         android:label="Tidal Remote"
-        android:icon="@android:drawable/ic_media_play"
+        android:icon="@mipmap/ic_launcher"
         android:allowBackup="false">
 
         <activity
