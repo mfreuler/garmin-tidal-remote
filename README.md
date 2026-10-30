@@ -125,6 +125,11 @@ Both lines below the buttons should show ✓.
 3. Check the **country**: the two-letter code of the country where you signed up for Tidal (CH, DE, GB, BR, US, …). It is pre-filled from the SIM card.
 4. Tap **Save**.
 
+## Uninstalling
+
+- **Watch:** on the watch, open **Settings → Activities & Apps → Tidal Remote → Delete**. Don't try it in Garmin Connect on the phone: for sideloaded apps it shows "Unable to Update Settings", and the watch may restart.
+- **Phone:** uninstall **Tidal Remote** like any other app. Its settings, including the Tidal developer login, are deleted with it.
+
 ## Changing the lists
 
 All lists are edited in the companion app; the watch app never needs a rebuild for this.
