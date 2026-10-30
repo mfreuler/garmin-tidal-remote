@@ -149,6 +149,13 @@ class MainActivity : Activity() {
             textSize = 12f
             setTextColor(MUTED)
         }
+        add(button("Check watch connection") {
+            WatchLink.check(this)
+            refreshLog()
+            // The watch's answer takes a moment.
+            log.postDelayed({ refreshLog() }, 3000)
+        }, top = 8)
+        add(help("If no \"watch answered\" line appears within a few seconds, Garmin Connect can't reach the watch app."))
         add(log, top = 8)
 
         container = root

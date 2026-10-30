@@ -92,11 +92,39 @@ object WatchLink {
         if (devices.isEmpty()) CommandLog.add(ctx, "No watch found in Garmin Connect")
         for (device in devices) {
             CommandLog.add(ctx, "Listening to ${device.friendlyName}")
+            // Logged so the command list shows when Garmin Connect loses the watch.
+            instance.registerForDeviceEvents(device) { dev, status ->
+                CommandLog.add(ctx, "${dev.friendlyName}: ${status.name.lowercase().replace('_', ' ')}")
+            }
             for (app in apps) {
                 register(instance, ctx, device, app, app)
             }
             // The simulator delivers messages with an empty app id instead of the real one.
             if (connectType == ConnectIQ.IQConnectType.TETHERED) register(instance, ctx, device, IQApp(""), apps[0])
+        }
+    }
+
+    /**
+     * Asks Garmin Connect for each watch's state and whether Tidal Remote is installed on it. The second
+     * answer comes from the watch itself, so it tests the same channel the watch app's commands use.
+     */
+    fun check(ctx: Context) {
+        val instance = ciq ?: return CommandLog.add(ctx, "Check: not connected to Garmin Connect")
+        try {
+            for (device in instance.knownDevices ?: emptyList()) {
+                CommandLog.add(ctx, "Check ${device.friendlyName}: ${instance.getDeviceStatus(device).name.lowercase().replace('_', ' ')}")
+                instance.getApplicationInfo(Config.WATCH_APP_IDS[0], device, object : ConnectIQ.IQApplicationInfoListener {
+                    override fun onApplicationInfoReceived(app: IQApp) {
+                        CommandLog.add(ctx, "Check: watch answered, Tidal Remote installed")
+                    }
+
+                    override fun onApplicationNotInstalled(applicationId: String) {
+                        CommandLog.add(ctx, "Check: watch answered, Tidal Remote not installed")
+                    }
+                })
+            }
+        } catch (e: Exception) {
+            CommandLog.add(ctx, "Check failed: ${e.javaClass.simpleName}")
         }
     }
 

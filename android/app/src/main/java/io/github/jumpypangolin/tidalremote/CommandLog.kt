@@ -8,7 +8,7 @@ import java.util.Locale
 
 /** Keeps the last commands and results, shown in the app. */
 object CommandLog {
-    private const val MAX = 30
+    private const val MAX = 50
     private const val TAG = "TidalRemote"
 
     fun add(ctx: Context, line: String) {
