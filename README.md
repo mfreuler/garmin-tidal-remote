@@ -103,6 +103,8 @@ Download the files from the [latest release](../../releases/latest).
 2. Open it and allow installing apps from that source when asked. Android may warn that the app is unknown, since it doesn't come from the Play Store.
 3. Open **Tidal Remote** and allow notifications.
 
+If Google Play Protect blocks the install ("App blocked to protect your device"): Play Protect stops apps from the browser that ask for sensitive access, and this app needs notification access (see step 3). Either turn off **Play Store → profile picture → Play Protect → ⚙ → Scan apps with Play Protect** while you install it and turn it back on afterwards, or install it with a file manager app that offers its own safety check, or use `adb install TidalRemote.apk`.
+
 ### 2. Watch app
 1. Find your watch in the list above and download its `.prg` file.
 2. Connect the watch to the computer with its USB cable. On a Mac, use [Android File Transfer](https://www.android.com/filetransfer/) or [OpenMTP](https://openmtp.ganeshrvel.com/) to see the watch's files.
@@ -114,10 +116,12 @@ To update later, copy the new `.prg` the same way; your settings stay.
 
 ### 3. Phone setup (once)
 In the companion app, section **1. Phone setup**:
-1. **Allow access to Tidal (notification access)**: switch on Tidal Remote in the list. Tidal only accepts commands from apps with this access. If Tidal was already running, force-stop Tidal once afterwards (Settings → Apps → Tidal → Force stop).
+1. **Allow access to Tidal (notification access)**: switch on Tidal Remote in the list. Tidal only accepts commands from apps with this access.
+   - If Android says **"Restricted setting"**: open Settings → Apps → Tidal Remote, tap **⋮** (top right) → **Allow restricted settings**, then switch it on again. Android asks this for apps not installed from the Play Store.
+   - Then force-stop Tidal once (Settings → Apps → Tidal → **Force stop**). Tidal remembers an earlier refusal until it restarts.
 2. **Allow running in background (battery)**: confirm. Without it, Samsung and other phones may stop the app in the background.
 
-Both lines below the buttons should show ✓.
+Both lines below the buttons should show ✓. As long as the app can't reach Tidal, a **Getting started** box at the top lists these steps, with buttons to the right settings pages; it disappears once the genres load.
 
 ### 4. Track radio (optional)
 1. Sign in at [developer.tidal.com](https://developer.tidal.com) with your Tidal account and create an app.
@@ -173,7 +177,7 @@ The **Recent commands** section at the bottom of the companion app lists what th
 |-------------|--------------|
 | Phone not reachable | Watch not connected to the phone (Bluetooth, Garmin Connect). |
 | No reply from phone | The companion app is not running: open it once, check the battery setting, don't swipe the notification away. |
-| Tidal refused (notification access on?) | Notification access is off, or Tidal cached an earlier refusal: switch the access on and force-stop Tidal once. |
+| Tidal refused (notification access on?) | Notification access is off, or Tidal cached an earlier refusal: switch the access on (allow restricted settings first if Android asks) and force-stop Tidal once. |
 | Genre not found / Mix not found | The name no longer matches Tidal: re-tick the genre in the companion app. |
 | Nothing playing in Tidal | Track radio and Song info need a song loaded in Tidal. |
 

@@ -57,6 +57,9 @@ class MainActivity : Activity() {
     private lateinit var setupStatus: TextView
     private lateinit var genreInfo: TextView
     private lateinit var log: TextView
+    private lateinit var gettingStarted: LinearLayout
+    private var tidalFailed = false
+    private var loading = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -74,6 +77,20 @@ class MainActivity : Activity() {
         })
         add(help("Start Tidal playlists and control playback from your Garmin watch. Configure settings below and click Save. " +
             "Updates will be reflected on the watch after closing and re-opening the app."), top = 8)
+
+        // Shown only while Tidal refuses: the first-time steps Android and Tidal don't make obvious.
+        gettingStarted = section("Getting started")
+        add(help("Tidal Remote can't reach Tidal yet. Do these steps once:"))
+        add(help("1. Turn on notification access for Tidal Remote. If Android says \"Restricted setting\", " +
+            "open App info, tap ⋮ (top right) → Allow restricted settings, then try again."), top = 8)
+        add(button("Notification access") { startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) }, top = 8)
+        add(button("App info: Tidal Remote") { openAppInfo(packageName) })
+        add(help("2. Force-stop Tidal once, so it accepts Tidal Remote: App info → Force stop. " +
+            "Android doesn't let other apps do this."), top = 12)
+        add(button("App info: Tidal") { openAppInfo(TidalController.TIDAL) }, top = 8)
+        add(help("3. Come back here. The genres load by themselves and this box disappears."), top = 12)
+        add(button("Try again") { loadFromTidal() }, top = 8)
+        gettingStarted.visibility = View.GONE
 
         section("1. Phone setup")
         add(help("Notification access is mandatory for Tidal to accept commands. Battery exception is strongly recommended."))
@@ -158,6 +175,8 @@ class MainActivity : Activity() {
         super.onResume()
         refreshLog()
         updateSetupStatus()
+        // Back from the settings pages of the getting-started steps.
+        if (tidalFailed) loadFromTidal()
     }
 
     override fun onDestroy() {
@@ -178,6 +197,8 @@ class MainActivity : Activity() {
 
     /** Refreshes the genre list (and the cached mix names) from Tidal, keeping the current ticks. */
     private fun loadFromTidal() {
+        if (loading) return
+        loading = true
         scope.launch {
             val tidal = TidalController(this@MainActivity)
             try {
@@ -187,9 +208,15 @@ class MainActivity : Activity() {
                     showGenres(available, checkedGenres())
                 }
                 genreInfo.text = ""
+                tidalFailed = false
+                gettingStarted.visibility = View.GONE
                 tidal.mixNames().let { if (it.isNotEmpty()) config.cachedMixes = it }
             } catch (e: Exception) {
                 genreInfo.text = "Could not load Tidal's genres (${e.message ?: e.javaClass.simpleName}). Showing the last known list."
+                tidalFailed = true
+                gettingStarted.visibility = View.VISIBLE
+            } finally {
+                loading = false
             }
         }
     }
@@ -208,6 +235,10 @@ class MainActivity : Activity() {
 
     private fun checkedGenres(): List<String> =
         (0 until genres.childCount).map { genres.getChildAt(it) as CheckBox }.filter { it.isChecked }.map { it.text.toString() }
+
+    private fun openAppInfo(pkg: String) {
+        startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$pkg")))
+    }
 
     private fun requestBatteryExemption() {
         startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:$packageName")))
@@ -238,7 +269,7 @@ class MainActivity : Activity() {
     }
 
     /** Starts a section: a rounded card with a heading; following add() calls go into it. */
-    private fun section(title: String) {
+    private fun section(title: String): LinearLayout {
         val card = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             background = GradientDrawable().apply {
@@ -257,6 +288,7 @@ class MainActivity : Activity() {
             setTextColor(ACCENT)
             setTypeface(typeface, Typeface.BOLD)
         }, top = 0)
+        return card
     }
 
     private fun label(text: String) = TextView(this).apply {
