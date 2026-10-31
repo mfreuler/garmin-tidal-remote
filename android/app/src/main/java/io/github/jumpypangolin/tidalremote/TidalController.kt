@@ -191,10 +191,8 @@ class TidalController(private val ctx: Context) {
             val now = c.metadata?.getString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID) to c.queueTitle?.toString()
             if (c.playbackState?.state == PlaybackStateCompat.STATE_PLAYING && now != before) {
                 if (autoShuffle && !shuffleOn(c)) {
-                    // Tidal resets shuffle on every new queue; shuffle, then skip so the first track is random too.
+                    // Tidal resets shuffle on every new queue. The first track stays: skipping it was audible.
                     c.transportControls.sendCustomAction(ACTION_SHUFFLE, Bundle())
-                    delay(500)
-                    c.transportControls.skipToNext()
                 }
                 return
             }

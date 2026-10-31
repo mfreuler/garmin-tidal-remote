@@ -165,7 +165,7 @@ The Bluetooth hop from the watch to the phone comes on top; in everyday use it w
 - **Notification access is required**, because Tidal only accepts callers that have it.
 - **No hot key.** Garmin does not allow Connect IQ apps on the watch's hot keys. Use the glance list instead.
 - **Previous track** first jumps to the start of the current song if it has played for a few seconds; press it again for the song before.
-- **Auto-shuffle** (Options) is experimental: it switches shuffle on after a new playlist starts and skips to the next song, so the first song is random too.
+- **Auto-shuffle** (Options) switches shuffle on after a new playlist starts. The first song is still the playlist's first; only the songs after it are shuffled.
 - **Menu changes** reach the watch only after the watch app is closed and reopened.
 - **Track radio** needs the Tidal developer login. Without it, the item is hidden on the watch.
 

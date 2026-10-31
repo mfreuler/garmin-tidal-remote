@@ -132,10 +132,9 @@ class MainActivity : Activity() {
             "may stop the app in the background without it. If the watch can't reach the phone, show it again."))
         add(button("Hide or show the notification") { startActivity(WatchService.channelSettings(this)) }, top = 12)
         add(label("Auto-shuffle"), top = 16)
-        add(help("Switches shuffle on whenever the watch starts a new playlist, and skips to the next song so the " +
-            "first one is random too. Experimental."))
+        add(help("Switches shuffle on whenever the watch starts a new playlist. The first song plays as usual."))
         autoShuffle = CheckBox(this).apply {
-            text = "Auto-shuffle new playlists (experimental)"
+            text = "Auto-shuffle new playlists"
             isChecked = config.autoShuffle
             // The default tint is black on this dark screen, which hides the tick.
             buttonTintList = ColorStateList.valueOf(ACCENT)
