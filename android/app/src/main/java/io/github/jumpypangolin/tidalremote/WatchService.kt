@@ -16,7 +16,9 @@ import android.provider.Settings
 class WatchService : Service() {
 
     companion object {
-        private const val CHANNEL = "watch"
+        // "watch" was the first channel; it showed a badge on the app icon, which Android can't change afterwards.
+        private const val CHANNEL = "connection"
+        private const val OLD_CHANNEL = "watch"
         private const val NOTIFICATION_ID = 1
         private const val ACTION_REPOST = "io.github.jumpypangolin.tidalremote.REPOST_NOTIFICATION"
 
@@ -47,7 +49,10 @@ class WatchService : Service() {
 
     private fun startForeground() {
         val nm = getSystemService(NotificationManager::class.java)
-        nm.createNotificationChannel(NotificationChannel(CHANNEL, "Watch connection", NotificationManager.IMPORTANCE_LOW))
+        nm.deleteNotificationChannel(OLD_CHANNEL)
+        nm.createNotificationChannel(
+            NotificationChannel(CHANNEL, "Watch connection", NotificationManager.IMPORTANCE_LOW).apply { setShowBadge(false) },
+        )
         val open = PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
         val repost = PendingIntent.getService(
             this, 1, Intent(this, WatchService::class.java).setAction(ACTION_REPOST), PendingIntent.FLAG_IMMUTABLE,
