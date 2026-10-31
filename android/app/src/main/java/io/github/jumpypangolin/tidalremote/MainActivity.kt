@@ -135,7 +135,8 @@ class MainActivity : Activity() {
         }
         add(autoShuffle)
         add(label("Permanent notification"), top = 12)
-        add(help("Android shows a notification while the app listens for the watch. You can hide it; the app keeps working."))
+        add(help("Android shows a notification while the app listens for the watch. You can hide it, but some phones " +
+            "may stop the app in the background without it. If the watch can't reach the phone, show it again."))
         add(button("Hide or show the notification") { startActivity(WatchService.channelSettings(this)) }, top = 8)
         // Outside the cards, so it stands on its own.
         container = root
