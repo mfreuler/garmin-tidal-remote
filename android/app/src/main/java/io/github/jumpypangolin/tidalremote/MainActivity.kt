@@ -134,10 +134,10 @@ class MainActivity : Activity() {
             buttonTintList = ColorStateList.valueOf(ACCENT)
         }
         add(autoShuffle)
-        add(label("Permanent notification"), top = 12)
+        add(label("Permanent notification"), top = 16)
         add(help("Android shows a notification while the app listens for the watch. You can hide it, but some phones " +
             "may stop the app in the background without it. If the watch can't reach the phone, show it again."))
-        add(button("Hide or show the notification") { startActivity(WatchService.channelSettings(this)) }, top = 8)
+        add(button("Hide or show the notification") { startActivity(WatchService.channelSettings(this)) }, top = 12)
         // Outside the cards, so it stands on its own.
         container = root
         add(button("Save") { save() }.apply {
