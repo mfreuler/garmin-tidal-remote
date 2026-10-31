@@ -32,11 +32,9 @@ class WatchService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == ACTION_REPOST) {
-            startForeground()
-        } else {
-            WatchLink.reset()
-        }
+        // Also when the app is opened: brings the notification back after its category was switched on again.
+        startForeground()
+        if (intent?.action != ACTION_REPOST) WatchLink.reset()
         return START_STICKY
     }
 
