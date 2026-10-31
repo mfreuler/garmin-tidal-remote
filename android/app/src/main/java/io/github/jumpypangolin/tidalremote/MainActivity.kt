@@ -33,6 +33,7 @@ import kotlinx.coroutines.launch
 class MainActivity : Activity() {
 
     companion object {
+        const val EXTRA_HIDE_NOTIFICATION = "hideNotification"
         private val ACCENT = Color.rgb(0, 170, 170)
         private val MUTED = Color.rgb(160, 160, 160)
         private val WARNING = Color.rgb(230, 120, 80)
@@ -133,6 +134,9 @@ class MainActivity : Activity() {
             buttonTintList = ColorStateList.valueOf(ACCENT)
         }
         add(autoShuffle)
+        add(label("Permanent notification"), top = 12)
+        add(help("Android shows a notification while the app listens for the watch. You can hide it; the app keeps working."))
+        add(button("Hide or show the notification") { startActivity(WatchService.channelSettings(this)) }, top = 8)
         // Outside the cards, so it stands on its own.
         container = root
         add(button("Save") { save() }.apply {
@@ -176,6 +180,20 @@ class MainActivity : Activity() {
             requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
         }
         WatchService.start(this)
+        openNotificationSwitch(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        openNotificationSwitch(intent)
+    }
+
+    /** "Hide this notification" in the notification leads here. */
+    private fun openNotificationSwitch(intent: Intent?) {
+        if (intent?.getBooleanExtra(EXTRA_HIDE_NOTIFICATION, false) == true) {
+            intent.removeExtra(EXTRA_HIDE_NOTIFICATION)
+            startActivity(WatchService.channelSettings(this))
+        }
     }
 
     override fun onResume() {

@@ -17,7 +17,7 @@ class WatchService : Service() {
 
     companion object {
         // "watch" was the first channel; it showed a badge on the app icon, which Android can't change afterwards.
-        private const val CHANNEL = "connection"
+        const val CHANNEL = "connection"
         private const val OLD_CHANNEL = "watch"
         private const val NOTIFICATION_ID = 1
         private const val ACTION_REPOST = "io.github.jumpypangolin.tidalremote.REPOST_NOTIFICATION"
@@ -25,6 +25,11 @@ class WatchService : Service() {
         fun start(ctx: Context) {
             ctx.startForegroundService(Intent(ctx, WatchService::class.java))
         }
+
+        /** The switch for this notification. Opens as a floating panel on Samsung. */
+        fun channelSettings(ctx: Context): Intent = Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
+            .putExtra(Settings.EXTRA_APP_PACKAGE, ctx.packageName)
+            .putExtra(Settings.EXTRA_CHANNEL_ID, CHANNEL)
     }
 
     override fun onCreate() {
@@ -57,12 +62,14 @@ class WatchService : Service() {
         val repost = PendingIntent.getService(
             this, 1, Intent(this, WatchService::class.java).setAction(ACTION_REPOST), PendingIntent.FLAG_IMMUTABLE,
         )
+        // Via the app: Samsung's floating channel panel doesn't appear when started from the notification shade,
+        // and the app's notification page only lists the categories with developer options on.
         val hide = PendingIntent.getActivity(
             this, 2,
-            Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
-                .putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
-                .putExtra(Settings.EXTRA_CHANNEL_ID, CHANNEL),
-            PendingIntent.FLAG_IMMUTABLE,
+            Intent(this, MainActivity::class.java)
+                .setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                .putExtra(MainActivity.EXTRA_HIDE_NOTIFICATION, true),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
         val n = Notification.Builder(this, CHANNEL)
             .setSmallIcon(android.R.drawable.ic_media_play)
