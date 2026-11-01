@@ -97,12 +97,12 @@ class MainActivity : Activity() {
         add(help("Notification access is mandatory for Tidal to accept commands. Battery exception is strongly recommended. " +
             "For Tidal itself it is optional: without it, Tidal may forget the current song after a few idle hours " +
             "(App info → Battery → Unrestricted)."))
-        add(button("Allow access to Tidal (notification access)") {
+        add(button("Allow access to Tidal notifications") {
             startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
         }, top = 12)
-        add(button("Allow running in background (battery)") { requestBatteryExemption() }, top = 8)
+        add(button("Allow Tidal Remote unrestricted (battery)") { requestBatteryExemption() }, top = 8)
         // Android only lets an app request this for itself, so for Tidal open its App info page.
-        add(button("Tidal: allow running in background") { openAppInfo(TidalController.TIDAL) }, top = 8)
+        add(button("Allow Tidal unrestricted (battery)") { openAppInfo(TidalController.TIDAL) }, top = 8)
         setupStatus = help("").also { add(it, top = 8) }
 
         section("2. Watch lists")
@@ -282,9 +282,9 @@ class MainActivity : Activity() {
         val battery = power.isIgnoringBatteryOptimizations(packageName)
         val tidalBattery = power.isIgnoringBatteryOptimizations(TidalController.TIDAL)
         setupStatus.text = listOf(
-            if (access) "✓ Notification access is on" else "✗ Notification access is off: Tidal will refuse commands",
-            if (battery) "✓ Allowed to run in the background" else "✗ Battery optimisation is on: the app may stop in the background",
-            if (tidalBattery) "✓ Tidal runs unrestricted" else "– Tidal may be battery restricted (optional)",
+            if (access) "✓ Notification access granted" else "✗ Notification access not granted",
+            if (battery) "✓ Tidal Remote is running unrestricted" else "✗ Tidal Remote may be battery restricted",
+            if (tidalBattery) "✓ Tidal is running unrestricted" else "– Tidal may be battery restricted",
         ).joinToString("\n")
         setupStatus.setTextColor(if (access && battery) ACCENT else WARNING)
     }
