@@ -93,8 +93,8 @@ object WatchLink {
         for (device in devices) {
             CommandLog.add(ctx, "Listening to ${device.friendlyName}")
             // Logged so the command list shows when Garmin Connect loses the watch.
-            instance.registerForDeviceEvents(device) { dev, status ->
-                CommandLog.add(ctx, "${dev.friendlyName}: ${status.name.lowercase().replace('_', ' ')}")
+            instance.registerForDeviceEvents(device) { _, status ->
+                CommandLog.add(ctx, "${device.friendlyName}: ${status.name.lowercase().replace('_', ' ')}")
             }
             for (app in apps) {
                 register(instance, ctx, device, app, app)

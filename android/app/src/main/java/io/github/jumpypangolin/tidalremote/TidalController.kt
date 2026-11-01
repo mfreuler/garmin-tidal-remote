@@ -96,7 +96,12 @@ class TidalController(private val ctx: Context) {
             "Paused"
         } else {
             c.transportControls.play()
-            "Playing"
+            // After a night Tidal may have nothing left to resume; play() then silently does nothing.
+            repeat(20) {
+                delay(150)
+                if (c.playbackState?.state == PlaybackStateCompat.STATE_PLAYING) return@session "Playing"
+            }
+            throw TidalException("Nothing to resume. Pick a mix")
         }
     }
 
@@ -112,6 +117,9 @@ class TidalController(private val ctx: Context) {
             delay(150)
             if (c.metadata?.getString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID) != before) break
         }
+        if (forward && c.metadata?.getString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID) == before &&
+            c.playbackState?.state != PlaybackStateCompat.STATE_PLAYING
+        ) throw TidalException("Nothing playing. Pick a mix")
         songInfo(c) ?: "Skipped"
     }
 
@@ -174,7 +182,12 @@ class TidalController(private val ctx: Context) {
 
     /** Mixes on the Custom mixes page; falls back to "My Mix" entries on Home. */
     private suspend fun mixes(b: MediaBrowserCompat): List<MediaItem> {
-        val page = children(b, MIXES_PAGE).filter { it.mediaId?.startsWith("MIX::") == true }
+        var page = children(b, MIXES_PAGE).filter { it.mediaId?.startsWith("MIX::") == true }
+        if (page.isEmpty()) {
+            // Right after Tidal starts the page can come back empty; Home then only has My Mix 1-4.
+            delay(2000)
+            page = children(b, MIXES_PAGE).filter { it.mediaId?.startsWith("MIX::") == true }
+        }
         if (page.isNotEmpty()) return page
         return children(b, HOME)
             .filter { it.mediaId?.startsWith("MIX::") == true && title(it).startsWith("My Mix") }
