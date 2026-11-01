@@ -31,14 +31,16 @@ The **Now playing** screen stays open and controls playback:
 | Action | Touch | Button |
 |--------|-------|--------|
 | Play / Pause | Tap | START |
-| Next track | Swipe left | DOWN |
-| Previous track | Swipe right | UP |
+| Next track | Swipe left | UP |
+| Previous track | Swipe right | DOWN |
 | Shuffle on/off | Touch and hold | – |
 | Add to favorites | Swipe up | – |
 | Remove from favorites | Swipe down | – |
 | Leave the screen | – | BACK |
 
-Shuffle and favorites need a touchscreen with touch switched on. If touch is off during an activity, the buttons still work for the other actions. While the screen is open, it checks for a new song every 30 seconds.
+Shuffle and favorites need a touchscreen with touch switched on. If touch is turned off for activities in the watch's system settings, this app ignores touch too while an activity is recording. Only the buttons work then, so shuffle and favorites aren't available.
+
+While the screen is open, it checks for a new song every 30 seconds.
 
 The app also appears in the watch's **glance list**, so you can open it during an activity.
 

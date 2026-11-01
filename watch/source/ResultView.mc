@@ -152,7 +152,7 @@ class ResultView extends WatchUi.View {
     }
 }
 
-//! Now playing screen: tap or START = play/pause, swipe left or DOWN = next, swipe right or UP = previous,
+//! Now playing screen: tap or START = play/pause, swipe left or UP = next, swipe right or DOWN = previous,
 //! touch and hold = shuffle, swipe up = add to favorites, swipe down = remove.
 //! Buttons too, because touch can be off during an activity. BACK leaves the screen.
 //! A plain InputDelegate: a BehaviorDelegate turns all swipes and UP/DOWN into next/previous page on a Fenix 7 Pro.
@@ -178,9 +178,9 @@ class NowPlayingDelegate extends WatchUi.InputDelegate {
         var key = keyEvent.getKey();
         if (key == WatchUi.KEY_ENTER) {
             _view.send("playpause");
-        } else if (key == WatchUi.KEY_DOWN) {
-            _view.send("next");
         } else if (key == WatchUi.KEY_UP) {
+            _view.send("next");
+        } else if (key == WatchUi.KEY_DOWN) {
             _view.send("prev");
         } else if (key == WatchUi.KEY_ESC) {
             WatchUi.popView(WatchUi.SLIDE_RIGHT);
