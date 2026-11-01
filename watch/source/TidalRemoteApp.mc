@@ -7,7 +7,9 @@ import Toybox.WatchUi;
 //! Watch side of Tidal Remote: menus on the watch, commands go to the phone app.
 //! Watch -> phone:  ["menu"] | ["mix", name] | ["genre", name] | ["search", term] | ["radio"]
 //!                  | ["shuffle"] | ["playpause"] | ["next"] | ["prev"] | ["info"] | ["favon"] | ["favoff"] | ["poll"]
+//!                  | ["playlists"] | ["playlist", index, name]
 //! Phone -> watch:  ["menu", mixes[], genres[], searchTerms[], radioReady] | ["ok", text] | ["err", text] | ["song", text]
+//!                  | ["list", names[]]
 //! On newer watches (e.g. Fenix 7 Pro) a device app can also have a glance line, so one app covers both.
 (:glance)
 class TidalRemoteApp extends Application.AppBase {
@@ -102,6 +104,11 @@ class TidalRemoteApp extends Application.AppBase {
             Lists.save(Lists.SEARCH, data[3]);
             if (data.size() > 4) {
                 updateRadio(data[4] == true);
+            }
+        } else if (_result != null && "list".equals(kind) && data.size() > 1 && data[1] instanceof Array) {
+            // Only if the loading screen is still open: the list must not replace another screen.
+            if ((_result as ResultView).isWaiting()) {
+                WatchUi.switchToView(buildPlaylistMenu(data[1] as Array), new PlaylistDelegate(), WatchUi.SLIDE_LEFT);
             }
         } else if (_result != null && "song".equals(kind) && data.size() > 1) {
             (_result as ResultView).updateSong(data[1].toString());

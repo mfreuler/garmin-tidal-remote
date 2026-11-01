@@ -19,6 +19,7 @@ Tidal app → plays the music
 | Menu item | What happens |
 |-----------|--------------|
 | **My Mix** | Pick one of your Tidal mixes (My Mix 1–8, My Daily Discovery, …). The list comes from Tidal. |
+| **Favorites** | Pick one of the playlists in your Tidal collection. The list is loaded from Tidal each time, up to 50 playlists. |
 | **Genre** | Pick a genre. A random playlist from Tidal's page for that genre starts. |
 | **Search** | Pick a search term. A random playlist from Tidal's search results starts. |
 | **Track radio** | Starts Tidal's radio for the song that is playing. Only shown once the Tidal developer login is set up (see below). |
@@ -194,6 +195,7 @@ The **Recent commands** section at the bottom of the companion app lists what th
 | Phone not reachable | Watch not connected to the phone (Bluetooth, Garmin Connect). |
 | No reply from phone | The companion app is not running: open it once, check the battery setting, don't swipe the notification away. |
 | Tidal refused (notification access on?) | Notification access is off, or Tidal cached an earlier refusal: switch the access on (allow restricted settings first if Android asks) and force-stop Tidal once. |
+| No internet connection | The phone can't reach the internet. Commands that need Tidal's servers can't work until it's back. |
 | Genre not found / Mix not found | The name no longer matches Tidal: re-tick the genre in the companion app. |
 | Nothing playing in Tidal | Track radio and Now playing need a song loaded in Tidal. |
 

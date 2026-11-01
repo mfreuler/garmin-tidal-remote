@@ -28,6 +28,8 @@ class TidalController(private val ctx: Context) {
         private const val HOME = "HOME_V2::home_page_v2_id"
         private const val MIXES_PAGE = "HOME_V2::home/pages/DAILY_MIXES/view-all"
         private const val GENRES_PAGE = "DYNAMIC::pages/genre_page"
+        private const val PLAYLISTS = "MY_COLLECTION_PLAYLIST"
+        private const val MAX_PLAYLISTS = 50 // Keeps the list small enough for the watch's memory.
         private const val ACTION_SHUFFLE = "com.aspiro.tidal.player.action.TOGGLE_SHUFFLE"
         private const val ICON_SHUFFLE_ON = "ic_shuffle_active"
         private const val ACTION_FAVORITE = "com.aspiro.tidal.player.action.TOGGLE_FAVORITE"
@@ -63,6 +65,19 @@ class TidalController(private val ctx: Context) {
     suspend fun playSearch(term: String, autoShuffle: Boolean): String = session { b, c ->
         val pick = search(b, term).filter { isPlaylist(it) }.randomOrNull()
             ?: throw TidalException("No playlists for \"$term\"")
+        play(c, pick.mediaId!!, autoShuffle)
+        title(pick)
+    }
+
+    /** Names of the playlists in the user's Tidal collection, in Tidal's order. */
+    suspend fun playlistNames(): List<String> = session { b, _ -> playlists(b).take(MAX_PLAYLISTS).map { title(it) } }
+
+    /** Plays a collection playlist. The position tells playlists with the same name apart. */
+    suspend fun playPlaylist(index: Int, name: String, autoShuffle: Boolean): String = session { b, c ->
+        val list = playlists(b)
+        val pick = list.getOrNull(index)?.takeIf { title(it) == name }
+            ?: list.firstOrNull { title(it) == name }
+            ?: throw TidalException("Playlist not found: $name")
         play(c, pick.mediaId!!, autoShuffle)
         title(pick)
     }
@@ -207,6 +222,14 @@ class TidalController(private val ctx: Context) {
         return children(b, HOME)
             .filter { it.mediaId?.startsWith("MIX::") == true && title(it).startsWith("My Mix") }
             .distinctBy { it.mediaId }
+    }
+
+    private suspend fun playlists(b: MediaBrowserCompat): List<MediaItem> {
+        val list = children(b, PLAYLISTS).filter { isPlaylist(it) }
+        if (list.isNotEmpty()) return list
+        // Same as the mixes: right after Tidal starts the page can come back empty.
+        delay(2000)
+        return children(b, PLAYLISTS).filter { isPlaylist(it) }
     }
 
     /** Starts playback and waits until Tidal reports the new queue playing. */

@@ -1,17 +1,29 @@
 package io.github.jumpypangolin.tidalremote
 
 import android.content.Context
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
+import java.net.HttpURLConnection
+import java.net.URL
 
 /**
  * Executes one command from the watch and builds the reply.
  *
  * Watch -> phone:  ["menu"] | ["mix", name] | ["genre", name] | ["search", term] | ["radio"]
  *                  | ["shuffle"] | ["playpause"] | ["next"] | ["prev"] | ["info"] | ["favon"] | ["favoff"] | ["poll"]
+ *                  | ["playlists"] | ["playlist", index, name]
  * Phone -> watch:  ["menu", mixes[], genres[], searchTerms[], radioReady] | ["ok", text] | ["err", text] | ["song", text]
+ *                  | ["list", names[]]
  */
 class CommandHandler(private val ctx: Context) {
+
+    private companion object {
+        const val CHECK_URL = "https://connectivitycheck.gstatic.com/generate_204"
+        const val CHECK_TIMEOUT = 3000L
+    }
 
     private val config = Config(ctx)
     private val tidal = TidalController(ctx)
@@ -31,6 +43,8 @@ class CommandHandler(private val ctx: Context) {
                 "mix" -> ok(tidal.playMix(arg, shuffle))
                 "genre" -> ok(tidal.playGenre(arg, shuffle))
                 "search" -> ok(tidal.playSearch(arg, shuffle))
+                "playlists" -> playlists()
+                "playlist" -> ok(tidal.playPlaylist(arg.toIntOrNull() ?: -1, msg.getOrNull(2) ?: "", shuffle))
                 "radio" -> ok(radio(shuffle))
                 "shuffle" -> ok(if (tidal.toggleShuffle()) "Shuffle on" else "Shuffle off")
                 "playpause" -> ok(tidal.playPause())
@@ -42,25 +56,36 @@ class CommandHandler(private val ctx: Context) {
                 else -> err("Unknown command $cmd")
             }
         } catch (e: TidalException) {
-            err(e.message ?: "Failed")
+            failure(e.message ?: "Failed")
         } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
-            err("Tidal did not answer")
+            failure("Tidal did not answer")
         } catch (e: Exception) {
-            err("Error: ${e.javaClass.simpleName}")
+            failure("Error: ${e.javaClass.simpleName}")
         }
         // One short line per reply: the menu lists are long and song info spans two lines.
-        val summary = if (reply.firstOrNull() == "menu") "menu (${(reply[1] as List<*>).size} mixes)" else reply.joinToString(" ")
+        val summary = when (reply.firstOrNull()) {
+            "menu" -> "menu (${(reply[1] as List<*>).size} mixes)"
+            "list" -> "list (${(reply[1] as List<*>).size} playlists)"
+            else -> reply.joinToString(" ")
+        }
         CommandLog.add(ctx, "← ${summary.replace("\n", " / ").take(80)}")
         return reply
     }
 
     private suspend fun menu(): List<Any> {
         val mixes = try {
-            tidal.mixNames().also { if (it.isNotEmpty()) config.cachedMixes = it }
+            // Empty means Tidal could not load them, for example without internet.
+            tidal.mixNames().also { if (it.isNotEmpty()) config.cachedMixes = it }.ifEmpty { config.cachedMixes }
         } catch (e: Exception) {
             config.cachedMixes
         }
         return listOf("menu", mixes, config.genres, config.searchTerms, radioReady())
+    }
+
+    private suspend fun playlists(): List<Any> {
+        val names = tidal.playlistNames()
+        if (names.isEmpty()) throw TidalException("No favorite playlists")
+        return listOf("list", names)
     }
 
     /** Track radio needs the Tidal API login; without it the watch hides the menu item. */
@@ -83,6 +108,33 @@ class CommandHandler(private val ctx: Context) {
     /** Settings changed: drop the cached API client so new credentials are used. */
     fun reset() {
         api = null
+    }
+
+    /** Most errors look like something else when the phone is offline, so that is checked first. */
+    private suspend fun failure(text: String) = err(if (online()) text else "No internet connection")
+
+    /**
+     * A real request, the same way Tidal's traffic goes. Android's own status isn't enough:
+     * it can report a working connection while nothing gets through.
+     */
+    private suspend fun online(): Boolean {
+        // A hanging DNS lookup ignores the timeouts below, so the wait has its own limit.
+        val check = CoroutineScope(Dispatchers.IO).async {
+            try {
+                val c = URL(CHECK_URL).openConnection() as HttpURLConnection
+                c.connectTimeout = CHECK_TIMEOUT.toInt()
+                c.readTimeout = CHECK_TIMEOUT.toInt()
+                c.instanceFollowRedirects = false
+                try {
+                    c.responseCode == 204
+                } finally {
+                    c.disconnect()
+                }
+            } catch (e: Exception) {
+                false
+            }
+        }
+        return withTimeoutOrNull(CHECK_TIMEOUT) { check.await() } ?: false
     }
 
     private fun ok(text: String) = listOf("ok", text)

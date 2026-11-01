@@ -56,6 +56,7 @@ class StatusTitle extends WatchUi.Drawable {
 function buildMainMenu(title as StatusTitle) as WatchUi.Menu2 {
     var menu = new WatchUi.Menu2({ :title => title });
     menu.addItem(new WatchUi.MenuItem("My Mix", null, :mix, null));
+    menu.addItem(new WatchUi.MenuItem("Favorites", "your playlists", :favorites, null));
     menu.addItem(new WatchUi.MenuItem("Genre", "random playlist", :genre, null));
     menu.addItem(new WatchUi.MenuItem("Search", "random playlist", :search, null));
     // Shown until the phone says otherwise; it then stays hidden until the radio is set up.
@@ -75,6 +76,8 @@ class MainMenuDelegate extends WatchUi.Menu2InputDelegate {
         var id = item.getId();
         if (id == :mix) {
             pushList("My Mix", "mix", Lists.MIXES);
+        } else if (id == :favorites) {
+            getTidalApp().sendCommand(["playlists"], "Favorites");
         } else if (id == :genre) {
             pushList("Genre", "genre", Lists.GENRES);
         } else if (id == :search) {
@@ -94,6 +97,26 @@ class MainMenuDelegate extends WatchUi.Menu2InputDelegate {
             menu.addItem(new WatchUi.MenuItem(name, null, name, null));
         }
         WatchUi.pushView(menu, new ListDelegate(command), WatchUi.SLIDE_LEFT);
+    }
+}
+
+//! The phone's list of playlists. The ID is the position, because two playlists can have the same name.
+function buildPlaylistMenu(names as Array) as WatchUi.Menu2 {
+    var menu = new WatchUi.Menu2({ :title => "Favorites" });
+    for (var i = 0; i < names.size(); i++) {
+        menu.addItem(new WatchUi.MenuItem(names[i].toString(), null, i, null));
+    }
+    return menu;
+}
+
+class PlaylistDelegate extends WatchUi.Menu2InputDelegate {
+    function initialize() {
+        Menu2InputDelegate.initialize();
+    }
+
+    function onSelect(item as WatchUi.MenuItem) as Void {
+        var name = item.getLabel() as String;
+        getTidalApp().sendCommand(["playlist", item.getId().toString(), name], name);
     }
 }
 
