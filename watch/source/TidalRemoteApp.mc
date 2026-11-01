@@ -6,7 +6,7 @@ import Toybox.WatchUi;
 
 //! Watch side of Tidal Remote: menus on the watch, commands go to the phone app.
 //! Watch -> phone:  ["menu"] | ["mix", name] | ["genre", name] | ["search", term] | ["radio"]
-//!                  | ["shuffle"] | ["playpause"] | ["next"] | ["prev"] | ["info"]
+//!                  | ["shuffle"] | ["playpause"] | ["next"] | ["prev"] | ["info"] | ["favon"] | ["favoff"]
 //! Phone -> watch:  ["menu", mixes[], genres[], searchTerms[], radioReady] | ["ok", text] | ["err", text]
 //! On newer watches (e.g. Fenix 7 Pro) a device app can also have a glance line, so one app covers both.
 (:glance)

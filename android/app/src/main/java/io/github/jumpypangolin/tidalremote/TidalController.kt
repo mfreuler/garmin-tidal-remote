@@ -30,6 +30,8 @@ class TidalController(private val ctx: Context) {
         private const val GENRES_PAGE = "DYNAMIC::pages/genre_page"
         private const val ACTION_SHUFFLE = "com.aspiro.tidal.player.action.TOGGLE_SHUFFLE"
         private const val ICON_SHUFFLE_ON = "ic_shuffle_active"
+        private const val ACTION_FAVORITE = "com.aspiro.tidal.player.action.TOGGLE_FAVORITE"
+        private const val ICON_FAVORITE_ON = "ic_favorite_filled"
         private const val CONNECT_TIMEOUT = 10_000L
         private const val PLAY_TIMEOUT = 10_000L
     }
@@ -87,6 +89,19 @@ class TidalController(private val ctx: Context) {
             if (shuffleOn(c) != before) return@session !before
         }
         throw TidalException("Shuffle did not change")
+    }
+
+    /** Adds or removes the current song; returns false if it already was in that state. */
+    suspend fun setFavorite(on: Boolean): Boolean = session { _, c ->
+        if (c.metadata == null) throw TidalException("Nothing playing in Tidal")
+        if (actionIcon(c, ACTION_FAVORITE) == null) throw TidalException("Tidal has no favorite button here")
+        if (isFavorite(c) == on) return@session false
+        c.transportControls.sendCustomAction(ACTION_FAVORITE, Bundle())
+        repeat(20) {
+            delay(150)
+            if (isFavorite(c) == on) return@session true
+        }
+        throw TidalException("Favorite did not change")
     }
 
     /** Pauses if playing, otherwise plays; returns the new state. */
@@ -214,12 +229,17 @@ class TidalController(private val ctx: Context) {
     }
 
     /** Tidal does not report shuffle mode; its shuffle button icon does. */
-    private fun shuffleOn(c: MediaControllerCompat): Boolean {
-        val action = c.playbackState?.customActions?.firstOrNull { it.action == ACTION_SHUFFLE } ?: return false
+    private fun shuffleOn(c: MediaControllerCompat) = actionIcon(c, ACTION_SHUFFLE) == ICON_SHUFFLE_ON
+
+    /** Same for favorites: the button's text depends on the phone language, its icon doesn't. */
+    private fun isFavorite(c: MediaControllerCompat) = actionIcon(c, ACTION_FAVORITE) == ICON_FAVORITE_ON
+
+    private fun actionIcon(c: MediaControllerCompat, id: String): String? {
+        val action = c.playbackState?.customActions?.firstOrNull { it.action == id } ?: return null
         return try {
-            ctx.packageManager.getResourcesForApplication(TIDAL).getResourceEntryName(action.icon) == ICON_SHUFFLE_ON
+            ctx.packageManager.getResourcesForApplication(TIDAL).getResourceEntryName(action.icon)
         } catch (e: Exception) {
-            false
+            null
         }
     }
 

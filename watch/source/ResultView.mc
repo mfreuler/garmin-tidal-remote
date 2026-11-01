@@ -50,10 +50,10 @@ class ResultView extends WatchUi.View {
         _detail = text;
         _color = ok ? Graphics.COLOR_GREEN : Graphics.COLOR_RED;
         if (!_autoClose) {
-            // Play/pause and shuffle answer with the new state, the others with the song.
-            var state = ok && ("playpause".equals(_pending) || "shuffle".equals(_pending));
-            _title = state ? text : NOW_PLAYING;
-            if (ok && !state) {
+            // Skipping answers with the song, the others with the new state.
+            var song = "info".equals(_pending) || "next".equals(_pending) || "prev".equals(_pending);
+            _title = ok && !song ? text : NOW_PLAYING;
+            if (ok && song) {
                 _song = text;
             }
         }
@@ -129,7 +129,7 @@ class ResultView extends WatchUi.View {
 }
 
 //! Now playing screen: tap or START = play/pause, swipe left or DOWN = next, swipe right or UP = previous,
-//! touch and hold = shuffle.
+//! touch and hold = shuffle, swipe up = add to favorites, swipe down = remove.
 //! Buttons too, because touch can be off during an activity. BACK leaves the screen.
 class NowPlayingDelegate extends WatchUi.BehaviorDelegate {
     private var _view as ResultView;
@@ -153,23 +153,41 @@ class NowPlayingDelegate extends WatchUi.BehaviorDelegate {
         return true;
     }
 
+    //! Taken here because the UP and DOWN buttons would otherwise look like swipes (next/previous page).
+    function onKey(keyEvent as WatchUi.KeyEvent) as Boolean {
+        var key = keyEvent.getKey();
+        if (key == WatchUi.KEY_DOWN) {
+            _view.send("next");
+            return true;
+        } else if (key == WatchUi.KEY_UP) {
+            _view.send("prev");
+            return true;
+        }
+        return false;
+    }
+
+    //! On a Fenix 7 Pro swipe up and down arrive here, not in onSwipe.
     function onNextPage() as Boolean {
-        _view.send("next");
+        _view.send("favon");
         return true;
     }
 
     function onPreviousPage() as Boolean {
-        _view.send("prev");
+        _view.send("favoff");
         return true;
     }
 
-    //! Swipe right would normally mean back. On a Fenix 7 Pro swipe up and down skip as well.
+    //! Swipe right would normally mean back.
     function onSwipe(swipeEvent as WatchUi.SwipeEvent) as Boolean {
         var direction = swipeEvent.getDirection();
         if (direction == WatchUi.SWIPE_LEFT) {
             _view.send("next");
         } else if (direction == WatchUi.SWIPE_RIGHT) {
             _view.send("prev");
+        } else if (direction == WatchUi.SWIPE_UP) {
+            _view.send("favon");
+        } else if (direction == WatchUi.SWIPE_DOWN) {
+            _view.send("favoff");
         }
         return true;
     }

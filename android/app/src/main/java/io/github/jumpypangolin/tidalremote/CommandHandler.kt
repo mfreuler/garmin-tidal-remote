@@ -8,7 +8,7 @@ import kotlinx.coroutines.withContext
  * Executes one command from the watch and builds the reply.
  *
  * Watch -> phone:  ["menu"] | ["mix", name] | ["genre", name] | ["search", term] | ["radio"]
- *                  | ["shuffle"] | ["playpause"] | ["next"] | ["prev"] | ["info"]
+ *                  | ["shuffle"] | ["playpause"] | ["next"] | ["prev"] | ["info"] | ["favon"] | ["favoff"]
  * Phone -> watch:  ["menu", mixes[], genres[], searchTerms[], radioReady] | ["ok", text] | ["err", text]
  */
 class CommandHandler(private val ctx: Context) {
@@ -35,6 +35,8 @@ class CommandHandler(private val ctx: Context) {
                 "next" -> ok(tidal.skip(forward = true))
                 "prev" -> ok(tidal.skip(forward = false))
                 "info" -> ok(tidal.nowPlaying())
+                "favon" -> ok(if (tidal.setFavorite(true)) "Favorite added" else "Already favorite")
+                "favoff" -> ok(if (tidal.setFavorite(false)) "Favorite removed" else "Not a favorite")
                 else -> err("Unknown command $cmd")
             }
         } catch (e: TidalException) {
