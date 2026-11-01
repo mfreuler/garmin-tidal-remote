@@ -50,8 +50,8 @@ class ResultView extends WatchUi.View {
         _detail = text;
         _color = ok ? Graphics.COLOR_GREEN : Graphics.COLOR_RED;
         if (!_autoClose) {
-            // Play/pause answers with the new state, the others with the song.
-            var state = ok && "playpause".equals(_pending);
+            // Play/pause and shuffle answer with the new state, the others with the song.
+            var state = ok && ("playpause".equals(_pending) || "shuffle".equals(_pending));
             _title = state ? text : NOW_PLAYING;
             if (ok && !state) {
                 _song = text;
@@ -128,7 +128,8 @@ class ResultView extends WatchUi.View {
     }
 }
 
-//! Now playing screen: tap or START = play/pause, swipe left or DOWN = next, swipe right or UP = previous.
+//! Now playing screen: tap or START = play/pause, swipe left or DOWN = next, swipe right or UP = previous,
+//! touch and hold = shuffle.
 //! Buttons too, because touch can be off during an activity. BACK leaves the screen.
 class NowPlayingDelegate extends WatchUi.BehaviorDelegate {
     private var _view as ResultView;
@@ -145,6 +146,11 @@ class NowPlayingDelegate extends WatchUi.BehaviorDelegate {
 
     function onTap(clickEvent as WatchUi.ClickEvent) as Boolean {
         return onSelect();
+    }
+
+    function onHold(clickEvent as WatchUi.ClickEvent) as Boolean {
+        _view.send("shuffle");
+        return true;
     }
 
     function onNextPage() as Boolean {
