@@ -13,6 +13,8 @@ import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
 import android.text.InputType
+import android.text.SpannableStringBuilder
+import android.text.style.ForegroundColorSpan
 import android.text.method.PasswordTransformationMethod
 import android.view.View
 import android.view.WindowInsets
@@ -273,7 +275,12 @@ class MainActivity : Activity() {
     }
 
     private fun requestBatteryExemption() {
-        startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:$packageName")))
+        // The quick Allow dialog only appears while the app is still restricted; afterwards show its App info.
+        if (getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(packageName)) {
+            openAppInfo(packageName)
+        } else {
+            startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:$packageName")))
+        }
     }
 
     private fun updateSetupStatus() {
@@ -281,12 +288,23 @@ class MainActivity : Activity() {
         val power = getSystemService(PowerManager::class.java)
         val battery = power.isIgnoringBatteryOptimizations(packageName)
         val tidalBattery = power.isIgnoringBatteryOptimizations(TidalController.TIDAL)
-        setupStatus.text = listOf(
-            if (access) "✓ Notification access granted" else "✗ Notification access not granted",
-            if (battery) "✓ Tidal Remote is running unrestricted" else "✗ Tidal Remote may be battery restricted",
-            if (tidalBattery) "✓ Tidal is running unrestricted" else "– Tidal may be battery restricted",
-        ).joinToString("\n")
-        setupStatus.setTextColor(if (access && battery) ACCENT else WARNING)
+        // Each line in its own colour: set, missing, or missing but optional (Tidal).
+        val lines = listOf(
+            (if (access) "✓ Notification access granted" else "✗ Notification access not granted") to
+                (if (access) ACCENT else WARNING),
+            (if (battery) "✓ Tidal Remote is running unrestricted" else "✗ Tidal Remote may be battery restricted") to
+                (if (battery) ACCENT else WARNING),
+            (if (tidalBattery) "✓ Tidal is running unrestricted" else "– Tidal may be battery restricted") to
+                (if (tidalBattery) ACCENT else MUTED),
+        )
+        val text = SpannableStringBuilder()
+        lines.forEachIndexed { i, (line, color) ->
+            if (i > 0) text.append("\n")
+            val start = text.length
+            text.append(line)
+            text.setSpan(ForegroundColorSpan(color), start, text.length, 0)
+        }
+        setupStatus.text = text
     }
 
     private fun refreshLog() {
