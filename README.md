@@ -22,10 +22,21 @@ Tidal app → plays the music
 | **Genre** | Pick a genre. A random playlist from Tidal's page for that genre starts. |
 | **Search** | Pick a search term. A random playlist from Tidal's search results starts. |
 | **Track radio** | Starts Tidal's radio for the song that is playing. Only shown once the Tidal developer login is set up (see below). |
-| **Playback** | Play / Pause, Next track, Previous track, Shuffle on/off. |
-| **Song info** | Shows title and artist of the current song. |
+| **Song info** | Shows title and artist of the current song, and controls playback (see below). |
 
 After each command, the watch shows the result ("OK" with the playlist or song name, or "Failed" with the reason) and vibrates once for OK, twice for a failure.
+
+The **Song info** screen stays open and controls playback:
+
+| Action | Touch | Button |
+|--------|-------|--------|
+| Play / Pause | Tap | START |
+| Next track | Swipe left | DOWN |
+| Previous track | Swipe right | UP |
+| Shuffle on/off | Touch and hold | – |
+| Leave the screen | – | BACK |
+
+Shuffle needs a touchscreen with touch switched on. If touch is off during an activity, the buttons still work for the other actions. The screen updates after each action, not by itself when a song ends.
 
 The app also appears in the watch's **glance list**, so you can open it during an activity.
 

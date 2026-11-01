@@ -62,8 +62,7 @@ function buildMainMenu(title as StatusTitle) as WatchUi.Menu2 {
     if (Application.Storage.getValue(Lists.RADIO_READY) != false) {
         menu.addItem(new WatchUi.MenuItem("Track radio", "current song", :radio, null));
     }
-    menu.addItem(new WatchUi.MenuItem("Playback", "play, skip, shuffle", :playback, null));
-    menu.addItem(new WatchUi.MenuItem("Song info", "artist and title", :info, null));
+    menu.addItem(new WatchUi.MenuItem("Song info", "play, skip, shuffle", :info, null));
     return menu;
 }
 
@@ -84,13 +83,6 @@ class MainMenuDelegate extends WatchUi.Menu2InputDelegate {
             getTidalApp().sendCommand(["radio"], "Track radio");
         } else if (id == :info) {
             getTidalApp().sendCommand(["info"], "Now playing");
-        } else if (id == :playback) {
-            var menu = new WatchUi.Menu2({ :title => "Playback" });
-            menu.addItem(new WatchUi.MenuItem("Play / Pause", null, "playpause", null));
-            menu.addItem(new WatchUi.MenuItem("Next track", null, "next", null));
-            menu.addItem(new WatchUi.MenuItem("Previous track", null, "prev", null));
-            menu.addItem(new WatchUi.MenuItem("Shuffle", "on / off", "shuffle", null));
-            WatchUi.pushView(menu, new PlaybackDelegate(), WatchUi.SLIDE_LEFT);
         }
     }
 
@@ -117,16 +109,5 @@ class ListDelegate extends WatchUi.Menu2InputDelegate {
     function onSelect(item as WatchUi.MenuItem) as Void {
         var name = item.getId() as String;
         getTidalApp().sendCommand([_command, name], name);
-    }
-}
-
-//! Playback entry picked: the item id is the command.
-class PlaybackDelegate extends WatchUi.Menu2InputDelegate {
-    function initialize() {
-        Menu2InputDelegate.initialize();
-    }
-
-    function onSelect(item as WatchUi.MenuItem) as Void {
-        getTidalApp().sendCommand([item.getId() as String], item.getLabel());
     }
 }
