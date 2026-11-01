@@ -94,11 +94,15 @@ class MainActivity : Activity() {
         gettingStarted.visibility = View.GONE
 
         section("1. Phone setup")
-        add(help("Notification access is mandatory for Tidal to accept commands. Battery exception is strongly recommended."))
+        add(help("Notification access is mandatory for Tidal to accept commands. Battery exception is strongly recommended. " +
+            "For Tidal itself it is optional: without it, Tidal may forget the current song after a few idle hours " +
+            "(App info → Battery → Unrestricted)."))
         add(button("Allow access to Tidal (notification access)") {
             startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
         }, top = 12)
         add(button("Allow running in background (battery)") { requestBatteryExemption() }, top = 8)
+        // Android only lets an app request this for itself, so for Tidal open its App info page.
+        add(button("Tidal: allow running in background") { openAppInfo(TidalController.TIDAL) }, top = 8)
         setupStatus = help("").also { add(it, top = 8) }
 
         section("2. Watch lists")
@@ -274,10 +278,13 @@ class MainActivity : Activity() {
 
     private fun updateSetupStatus() {
         val access = TidalAccessListener.isEnabled(this)
-        val battery = getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(packageName)
+        val power = getSystemService(PowerManager::class.java)
+        val battery = power.isIgnoringBatteryOptimizations(packageName)
+        val tidalBattery = power.isIgnoringBatteryOptimizations(TidalController.TIDAL)
         setupStatus.text = listOf(
             if (access) "✓ Notification access is on" else "✗ Notification access is off: Tidal will refuse commands",
             if (battery) "✓ Allowed to run in the background" else "✗ Battery optimisation is on: the app may stop in the background",
+            if (tidalBattery) "✓ Tidal may run in the background" else "– Tidal is battery optimised (optional)",
         ).joinToString("\n")
         setupStatus.setTextColor(if (access && battery) ACCENT else WARNING)
     }
