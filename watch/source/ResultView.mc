@@ -155,21 +155,18 @@ class ResultView extends WatchUi.View {
 //! Now playing screen: tap or START = play/pause, swipe left or DOWN = next, swipe right or UP = previous,
 //! touch and hold = shuffle, swipe up = add to favorites, swipe down = remove.
 //! Buttons too, because touch can be off during an activity. BACK leaves the screen.
-class NowPlayingDelegate extends WatchUi.BehaviorDelegate {
+//! A plain InputDelegate: a BehaviorDelegate turns all swipes and UP/DOWN into next/previous page on a Fenix 7 Pro.
+class NowPlayingDelegate extends WatchUi.InputDelegate {
     private var _view as ResultView;
 
     function initialize(view as ResultView) {
-        BehaviorDelegate.initialize();
+        InputDelegate.initialize();
         _view = view;
     }
 
-    function onSelect() as Boolean {
+    function onTap(clickEvent as WatchUi.ClickEvent) as Boolean {
         _view.send("playpause");
         return true;
-    }
-
-    function onTap(clickEvent as WatchUi.ClickEvent) as Boolean {
-        return onSelect();
     }
 
     function onHold(clickEvent as WatchUi.ClickEvent) as Boolean {
@@ -177,31 +174,22 @@ class NowPlayingDelegate extends WatchUi.BehaviorDelegate {
         return true;
     }
 
-    //! Taken here because the UP and DOWN buttons would otherwise look like swipes (next/previous page).
     function onKey(keyEvent as WatchUi.KeyEvent) as Boolean {
         var key = keyEvent.getKey();
-        if (key == WatchUi.KEY_DOWN) {
+        if (key == WatchUi.KEY_ENTER) {
+            _view.send("playpause");
+        } else if (key == WatchUi.KEY_DOWN) {
             _view.send("next");
-            return true;
         } else if (key == WatchUi.KEY_UP) {
             _view.send("prev");
-            return true;
+        } else if (key == WatchUi.KEY_ESC) {
+            WatchUi.popView(WatchUi.SLIDE_RIGHT);
+        } else {
+            return false;
         }
-        return false;
-    }
-
-    //! On a Fenix 7 Pro swipe up and down arrive here, not in onSwipe.
-    function onNextPage() as Boolean {
-        _view.send("favon");
         return true;
     }
 
-    function onPreviousPage() as Boolean {
-        _view.send("favoff");
-        return true;
-    }
-
-    //! Swipe right would normally mean back.
     function onSwipe(swipeEvent as WatchUi.SwipeEvent) as Boolean {
         var direction = swipeEvent.getDirection();
         if (direction == WatchUi.SWIPE_LEFT) {
