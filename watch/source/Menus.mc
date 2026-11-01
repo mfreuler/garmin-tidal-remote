@@ -77,7 +77,7 @@ class MainMenuDelegate extends WatchUi.Menu2InputDelegate {
         if (id == :mix) {
             pushList("My Mix", "mix", Lists.MIXES);
         } else if (id == :favorites) {
-            getTidalApp().sendCommand(["playlists"], "Favorites");
+            getTidalApp().sendCommand(["playlists", "0"], "Favorites");
         } else if (id == :genre) {
             pushList("Genre", "genre", Lists.GENRES);
         } else if (id == :search) {
@@ -87,6 +87,11 @@ class MainMenuDelegate extends WatchUi.Menu2InputDelegate {
         } else if (id == :info) {
             getTidalApp().sendCommand(["info"], "Now playing");
         }
+    }
+
+    //! Touching the title area, on watches with API 5.1 or newer: a shortcut to Now playing.
+    function onTitle() as Void {
+        getTidalApp().sendCommand(["info"], "Now playing");
     }
 
     private function pushList(title as String, command as String, key as String) as Void {
@@ -100,21 +105,31 @@ class MainMenuDelegate extends WatchUi.Menu2InputDelegate {
     }
 }
 
-//! The phone's list of playlists. The ID is the position, because two playlists can have the same name.
-function buildPlaylistMenu(names as Array) as WatchUi.Menu2 {
+//! One page of the phone's playlists. The ID is the position, because two playlists can have the same name.
+function buildPlaylistMenu(names as Array, offset as Number, more as Boolean) as WatchUi.Menu2 {
     var menu = new WatchUi.Menu2({ :title => "Favorites" });
     for (var i = 0; i < names.size(); i++) {
-        menu.addItem(new WatchUi.MenuItem(names[i].toString(), null, i, null));
+        menu.addItem(new WatchUi.MenuItem(names[i].toString(), null, offset + i, null));
+    }
+    if (more) {
+        menu.addItem(new WatchUi.MenuItem("Next 25", null, :next, null));
     }
     return menu;
 }
 
 class PlaylistDelegate extends WatchUi.Menu2InputDelegate {
-    function initialize() {
+    private var _nextOffset as Number;
+
+    function initialize(nextOffset as Number) {
         Menu2InputDelegate.initialize();
+        _nextOffset = nextOffset;
     }
 
     function onSelect(item as WatchUi.MenuItem) as Void {
+        if (item.getId() == :next) {
+            getTidalApp().nextPlaylists(_nextOffset);
+            return;
+        }
         var name = item.getLabel() as String;
         getTidalApp().sendCommand(["playlist", item.getId().toString(), name], name);
     }

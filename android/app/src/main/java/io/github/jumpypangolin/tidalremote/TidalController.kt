@@ -29,7 +29,7 @@ class TidalController(private val ctx: Context) {
         private const val MIXES_PAGE = "HOME_V2::home/pages/DAILY_MIXES/view-all"
         private const val GENRES_PAGE = "DYNAMIC::pages/genre_page"
         private const val PLAYLISTS = "MY_COLLECTION_PLAYLIST"
-        private const val MAX_PLAYLISTS = 50 // Keeps the list small enough for the watch's memory.
+        private const val PLAYLIST_PAGE = 25 // Must match "Next 25" on the watch.
         private const val ACTION_SHUFFLE = "com.aspiro.tidal.player.action.TOGGLE_SHUFFLE"
         private const val ICON_SHUFFLE_ON = "ic_shuffle_active"
         private const val ACTION_FAVORITE = "com.aspiro.tidal.player.action.TOGGLE_FAVORITE"
@@ -69,8 +69,11 @@ class TidalController(private val ctx: Context) {
         title(pick)
     }
 
-    /** Names of the playlists in the user's Tidal collection, in Tidal's order. */
-    suspend fun playlistNames(): List<String> = session { b, _ -> playlists(b).take(MAX_PLAYLISTS).map { title(it) } }
+    /** One page of playlist names from the user's Tidal collection, and whether more follow. */
+    suspend fun playlistPage(offset: Int): Pair<List<String>, Boolean> = session { b, _ ->
+        val list = playlists(b)
+        list.drop(offset).take(PLAYLIST_PAGE).map { title(it) } to (list.size > offset + PLAYLIST_PAGE)
+    }
 
     /** Plays a collection playlist. The position tells playlists with the same name apart. */
     suspend fun playPlaylist(index: Int, name: String, autoShuffle: Boolean): String = session { b, c ->

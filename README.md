@@ -19,11 +19,11 @@ Tidal app → plays the music
 | Menu item | What happens |
 |-----------|--------------|
 | **My Mix** | Pick one of your Tidal mixes (My Mix 1–8, My Daily Discovery, …). The list comes from Tidal. |
-| **Favorites** | Pick one of the playlists in your Tidal collection. The list is loaded from Tidal each time, up to 50 playlists. |
+| **Favorites** | Pick one of the playlists in your Tidal collection. The list is loaded from Tidal each time, 25 at a time. **Next 25** at the end of the list loads the following ones. |
 | **Genre** | Pick a genre. A random playlist from Tidal's page for that genre starts. |
 | **Search** | Pick a search term. A random playlist from Tidal's search results starts. |
 | **Track radio** | Starts Tidal's radio for the song that is playing. Only shown once the Tidal developer login is set up (see below). |
-| **Now playing** | Shows title and artist of the current song, and controls playback (see below). |
+| **Now playing** | Shows title and artist of the current song, and controls playback (see below). On a touchscreen, tapping "Tidal" at the top of the menu also opens it (needs a watch with Connect IQ 5.1 or newer). |
 
 After each command, the watch shows the result ("OK" with the playlist or song name, or "Failed" with the reason) and vibrates once for OK, twice for a failure.
 

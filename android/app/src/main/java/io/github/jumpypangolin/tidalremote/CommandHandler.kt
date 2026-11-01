@@ -14,9 +14,9 @@ import java.net.URL
  *
  * Watch -> phone:  ["menu"] | ["mix", name] | ["genre", name] | ["search", term] | ["radio"]
  *                  | ["shuffle"] | ["playpause"] | ["next"] | ["prev"] | ["info"] | ["favon"] | ["favoff"] | ["poll"]
- *                  | ["playlists"] | ["playlist", index, name]
+ *                  | ["playlists", offset] | ["playlist", index, name]
  * Phone -> watch:  ["menu", mixes[], genres[], searchTerms[], radioReady] | ["ok", text] | ["err", text] | ["song", text]
- *                  | ["list", names[]]
+ *                  | ["list", names[], offset, more]
  */
 class CommandHandler(private val ctx: Context) {
 
@@ -43,7 +43,7 @@ class CommandHandler(private val ctx: Context) {
                 "mix" -> ok(tidal.playMix(arg, shuffle))
                 "genre" -> ok(tidal.playGenre(arg, shuffle))
                 "search" -> ok(tidal.playSearch(arg, shuffle))
-                "playlists" -> playlists()
+                "playlists" -> playlists(arg.toIntOrNull() ?: 0)
                 "playlist" -> ok(tidal.playPlaylist(arg.toIntOrNull() ?: -1, msg.getOrNull(2) ?: "", shuffle))
                 "radio" -> ok(radio(shuffle))
                 "shuffle" -> ok(if (tidal.toggleShuffle()) "Shuffle on" else "Shuffle off")
@@ -82,10 +82,10 @@ class CommandHandler(private val ctx: Context) {
         return listOf("menu", mixes, config.genres, config.searchTerms, radioReady())
     }
 
-    private suspend fun playlists(): List<Any> {
-        val names = tidal.playlistNames()
+    private suspend fun playlists(offset: Int): List<Any> {
+        val (names, more) = tidal.playlistPage(offset)
         if (names.isEmpty()) throw TidalException("No favorite playlists")
-        return listOf("list", names)
+        return listOf("list", names, offset, more)
     }
 
     /** Track radio needs the Tidal API login; without it the watch hides the menu item. */
