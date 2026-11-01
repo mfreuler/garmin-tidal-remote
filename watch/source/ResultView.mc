@@ -157,7 +157,7 @@ class NowPlayingDelegate extends WatchUi.BehaviorDelegate {
         return true;
     }
 
-    //! Swipe right would normally mean back. Up and down do nothing here, to avoid skipping by accident.
+    //! Swipe right would normally mean back. On a Fenix 7 Pro swipe up and down skip as well.
     function onSwipe(swipeEvent as WatchUi.SwipeEvent) as Boolean {
         var direction = swipeEvent.getDirection();
         if (direction == WatchUi.SWIPE_LEFT) {
