@@ -4,15 +4,15 @@ import Toybox.Lang;
 import Toybox.Timer;
 import Toybox.WatchUi;
 
-//! Shows "Sending...", then OK / Failed. Returns to the menu by itself after an OK.
+//! Shows the command with dots while waiting, then OK / Failed. Returns to the menu by itself after an OK.
 class ResultView extends WatchUi.View {
     private const REPLY_TIMEOUT_MS = 25000;
     private const CLOSE_AFTER_OK_MS = 2500;
 
     private var _title as String;
-    private var _status as String = "Sending...";
+    private var _status as String = "...";
     private var _detail as String = "";
-    private var _color as Number = Graphics.COLOR_WHITE;
+    private var _color as Number = Graphics.COLOR_DK_GRAY;
     private var _done as Boolean = false;
     private var _visible as Boolean = false;
     private var _timer as Timer.Timer = new Timer.Timer();
@@ -33,14 +33,6 @@ class ResultView extends WatchUi.View {
     function onHide() as Void {
         _visible = false;
         _timer.stop();
-    }
-
-    //! The watch handed the message to the phone; now waiting for the reply.
-    function sent() as Void {
-        if (!_done) {
-            _status = "Waiting for phone...";
-            WatchUi.requestUpdate();
-        }
     }
 
     function show(ok as Boolean, text as String) as Void {

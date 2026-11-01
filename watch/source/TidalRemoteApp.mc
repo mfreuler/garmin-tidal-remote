@@ -132,8 +132,8 @@ class CommandListener extends Communications.ConnectionListener {
         _view = view;
     }
 
+    //! Delivered to the phone; the screen stays as it is until the reply arrives.
     function onComplete() as Void {
-        _view.sent();
     }
 
     function onError() as Void {
