@@ -96,9 +96,8 @@ class MainActivity : Activity() {
         gettingStarted.visibility = View.GONE
 
         section("1. Phone setup")
-        add(help("Notification access is mandatory for Tidal to accept commands. Battery exception is strongly recommended. " +
-            "For Tidal itself it is optional: without it, Tidal may forget the current song after a few idle hours " +
-            "(App info → Battery → Unrestricted)."))
+        add(help("Notification access is mandatory for Tidal to accept commands. Battery exception is strongly recommended " +
+            "for Tidal Remote and Tidal to avoid time-out issues after a few hours of inactivity."))
         add(button("Allow access to Tidal notifications") {
             startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
         }, top = 12)
@@ -288,21 +287,18 @@ class MainActivity : Activity() {
         val power = getSystemService(PowerManager::class.java)
         val battery = power.isIgnoringBatteryOptimizations(packageName)
         val tidalBattery = power.isIgnoringBatteryOptimizations(TidalController.TIDAL)
-        // Each line in its own colour: set, missing, or missing but optional (Tidal).
+        // Each line in its own colour, so one missing setting doesn't mark the others.
         val lines = listOf(
-            (if (access) "✓ Notification access granted" else "✗ Notification access not granted") to
-                (if (access) ACCENT else WARNING),
-            (if (battery) "✓ Tidal Remote is running unrestricted" else "✗ Tidal Remote may be battery restricted") to
-                (if (battery) ACCENT else WARNING),
-            (if (tidalBattery) "✓ Tidal is running unrestricted" else "– Tidal may be battery restricted") to
-                (if (tidalBattery) ACCENT else MUTED),
+            access to (if (access) "Notification access granted" else "Notification access not granted"),
+            battery to (if (battery) "Tidal Remote is running unrestricted" else "Tidal Remote may be battery restricted"),
+            tidalBattery to (if (tidalBattery) "Tidal is running unrestricted" else "Tidal may be battery restricted"),
         )
         val text = SpannableStringBuilder()
-        lines.forEachIndexed { i, (line, color) ->
+        lines.forEachIndexed { i, (ok, line) ->
             if (i > 0) text.append("\n")
             val start = text.length
-            text.append(line)
-            text.setSpan(ForegroundColorSpan(color), start, text.length, 0)
+            text.append(if (ok) "✓ " else "✗ ").append(line)
+            text.setSpan(ForegroundColorSpan(if (ok) ACCENT else WARNING), start, text.length, 0)
         }
         setupStatus.text = text
     }

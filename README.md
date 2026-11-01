@@ -120,9 +120,9 @@ In the companion app, section **1. Phone setup**:
    - If Android says **"Restricted setting"**: open Settings → Apps → Tidal Remote, tap **⋮** (top right) → **Allow restricted settings**, then switch it on again. Android asks this for apps not installed from the Play Store.
    - Then force-stop Tidal once (Settings → Apps → Tidal → **Force stop**). Tidal remembers an earlier refusal until it restarts.
 2. **Allow Tidal Remote unrestricted (battery)**: confirm. Without it, Samsung and other phones may stop the app in the background.
-3. **Allow Tidal unrestricted (battery)** (optional): opens Tidal's App info; tap Battery → **Unrestricted**. Without it, Tidal may forget the current song after a few idle hours, and the first command then takes longer.
+3. **Allow Tidal unrestricted (battery)**: opens Tidal's App info; tap Battery → **Unrestricted**. Without it, Tidal may forget the current song after a few idle hours, and the first command then takes longer.
 
-The first two lines below the buttons should show ✓; the third is optional. As long as the app can't reach Tidal, a **Getting started** box at the top lists these steps, with buttons to the right settings pages; it disappears once the genres load.
+Notification access is mandatory; the two battery settings are strongly recommended. All three lines below the buttons should show ✓. As long as the app can't reach Tidal, a **Getting started** box at the top lists these steps, with buttons to the right settings pages; it disappears once the genres load.
 
 ### 4. Track radio (optional)
 1. Sign in at [developer.tidal.com](https://developer.tidal.com) with your Tidal account and create an app.
