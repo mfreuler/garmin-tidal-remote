@@ -8,8 +8,8 @@ import kotlinx.coroutines.withContext
  * Executes one command from the watch and builds the reply.
  *
  * Watch -> phone:  ["menu"] | ["mix", name] | ["genre", name] | ["search", term] | ["radio"]
- *                  | ["shuffle"] | ["playpause"] | ["next"] | ["prev"] | ["info"] | ["favon"] | ["favoff"]
- * Phone -> watch:  ["menu", mixes[], genres[], searchTerms[], radioReady] | ["ok", text] | ["err", text]
+ *                  | ["shuffle"] | ["playpause"] | ["next"] | ["prev"] | ["info"] | ["favon"] | ["favoff"] | ["poll"]
+ * Phone -> watch:  ["menu", mixes[], genres[], searchTerms[], radioReady] | ["ok", text] | ["err", text] | ["song", text]
  */
 class CommandHandler(private val ctx: Context) {
 
@@ -21,6 +21,8 @@ class CommandHandler(private val ctx: Context) {
     suspend fun handle(msg: List<String>): List<Any> {
         val cmd = msg.firstOrNull() ?: return err("Empty command")
         val arg = msg.getOrNull(1) ?: ""
+        // Sent every 30 s while Now playing is open, so it stays out of the command log.
+        if (cmd == "poll") return listOf("song", try { tidal.nowPlaying() } catch (e: Exception) { "" })
         CommandLog.add(ctx, "→ ${msg.joinToString(" ")}")
         val reply: List<Any> = try {
             val shuffle = config.autoShuffle

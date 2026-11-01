@@ -10,6 +10,7 @@ import Toybox.WatchUi;
 class ResultView extends WatchUi.View {
     private const REPLY_TIMEOUT_MS = 25000;
     private const CLOSE_AFTER_OK_MS = 2500;
+    private const POLL_MS = 30000;
     private const NOW_PLAYING = "Now playing";
 
     private var _title as String;
@@ -19,6 +20,7 @@ class ResultView extends WatchUi.View {
     private var _done as Boolean = false;
     private var _visible as Boolean = false;
     private var _timer as Timer.Timer = new Timer.Timer();
+    private var _poll as Timer.Timer = new Timer.Timer();
     private var _autoClose as Boolean;
     private var _song as String = "";
     private var _pending as String = "info";
@@ -33,11 +35,33 @@ class ResultView extends WatchUi.View {
 
     function onShow() as Void {
         _visible = true;
+        if (!_autoClose) {
+            _poll.start(method(:onPoll), POLL_MS, true);
+        }
     }
 
     function onHide() as Void {
         _visible = false;
         _timer.stop();
+        _poll.stop();
+    }
+
+    //! Asks for the current song, so the screen follows when a track ends. Never vibrates or shows an error.
+    function onPoll() as Void {
+        if (_done) {
+            Communications.transmit(["poll"], null, new SilentListener());
+        }
+    }
+
+    function updateSong(text as String) as Void {
+        if (text.length() > 0 && !text.equals(_song)) {
+            _song = text;
+            if (_done) {
+                _title = NOW_PLAYING;
+                _color = Graphics.COLOR_GREEN;
+            }
+            WatchUi.requestUpdate();
+        }
     }
 
     function show(ok as Boolean, text as String) as Void {
