@@ -43,9 +43,10 @@ class TidalRemoteApp extends Application.AppBase {
 
     //! Sends a command to the phone and shows the result screen.
     function sendCommand(cmd as Array<String>, title as String) as Void {
-        var view = new ResultView(title, !"info".equals(cmd[0]));
+        var info = "info".equals(cmd[0]);
+        var view = new ResultView(title, !info);
         _result = view;
-        WatchUi.pushView(view, new WatchUi.BehaviorDelegate(), WatchUi.SLIDE_LEFT);
+        WatchUi.pushView(view, info ? new NowPlayingDelegate(view) : new WatchUi.BehaviorDelegate(), WatchUi.SLIDE_LEFT);
         Communications.transmit(cmd, null, new CommandListener(view));
     }
 
