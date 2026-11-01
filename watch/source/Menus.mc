@@ -62,7 +62,7 @@ function buildMainMenu(title as StatusTitle) as WatchUi.Menu2 {
     if (Application.Storage.getValue(Lists.RADIO_READY) != false) {
         menu.addItem(new WatchUi.MenuItem("Track radio", "current song", :radio, null));
     }
-    menu.addItem(new WatchUi.MenuItem("Song info", "play, skip, shuffle", :info, null));
+    menu.addItem(new WatchUi.MenuItem("Now playing", "play, skip, shuffle", :info, null));
     return menu;
 }
 

@@ -22,11 +22,11 @@ Tidal app → plays the music
 | **Genre** | Pick a genre. A random playlist from Tidal's page for that genre starts. |
 | **Search** | Pick a search term. A random playlist from Tidal's search results starts. |
 | **Track radio** | Starts Tidal's radio for the song that is playing. Only shown once the Tidal developer login is set up (see below). |
-| **Song info** | Shows title and artist of the current song, and controls playback (see below). |
+| **Now playing** | Shows title and artist of the current song, and controls playback (see below). |
 
 After each command, the watch shows the result ("OK" with the playlist or song name, or "Failed" with the reason) and vibrates once for OK, twice for a failure.
 
-The **Song info** screen stays open and controls playback:
+The **Now playing** screen stays open and controls playback:
 
 | Action | Touch | Button |
 |--------|-------|--------|
@@ -191,7 +191,7 @@ The **Recent commands** section at the bottom of the companion app lists what th
 | No reply from phone | The companion app is not running: open it once, check the battery setting, don't swipe the notification away. |
 | Tidal refused (notification access on?) | Notification access is off, or Tidal cached an earlier refusal: switch the access on (allow restricted settings first if Android asks) and force-stop Tidal once. |
 | Genre not found / Mix not found | The name no longer matches Tidal: re-tick the genre in the companion app. |
-| Nothing playing in Tidal | Track radio and Song info need a song loaded in Tidal. |
+| Nothing playing in Tidal | Track radio and Now playing need a song loaded in Tidal. |
 
 ## Project layout
 
