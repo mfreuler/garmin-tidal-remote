@@ -284,7 +284,7 @@ class MainActivity : Activity() {
         setupStatus.text = listOf(
             if (access) "✓ Notification access is on" else "✗ Notification access is off: Tidal will refuse commands",
             if (battery) "✓ Allowed to run in the background" else "✗ Battery optimisation is on: the app may stop in the background",
-            if (tidalBattery) "✓ Tidal may run in the background" else "– Tidal is battery optimised (optional)",
+            if (tidalBattery) "✓ Tidal runs unrestricted" else "– Tidal may be battery restricted (optional)",
         ).joinToString("\n")
         setupStatus.setTextColor(if (access && battery) ACCENT else WARNING)
     }
