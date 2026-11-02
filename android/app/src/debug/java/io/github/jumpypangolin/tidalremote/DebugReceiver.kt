@@ -15,6 +15,8 @@ import kotlinx.coroutines.launch
  * Debug builds only: run a watch command from adb without a watch. The reply goes to the log (tag TidalRemote).
  * adb shell am broadcast -n io.github.jumpypangolin.tidalremote/.DebugReceiver --esa cmd "mix,My Mix 3"
  * adb shell am broadcast -n io.github.jumpypangolin.tidalremote/.DebugReceiver --ez tethered true
+ * adb shell am broadcast -n io.github.jumpypangolin.tidalremote/.DebugReceiver --es play MY_COLLECTION_TRACKS
+ * adb shell am broadcast -n io.github.jumpypangolin.tidalremote/.DebugReceiver --es browse ""
  */
 class DebugReceiver : BroadcastReceiver() {
     override fun onReceive(ctx: Context, intent: Intent) {
@@ -24,6 +26,20 @@ class DebugReceiver : BroadcastReceiver() {
         }
         if (intent.hasExtra("browse")) {
             browse(ctx, intent.getStringExtra("browse") ?: "")
+            return
+        }
+        if (intent.hasExtra("play")) {
+            val pending = goAsync()
+            CoroutineScope(Dispatchers.Main).launch {
+                try {
+                    TidalController(ctx.applicationContext).playId(intent.getStringExtra("play") ?: "", false)
+                    Log.i("TidalRemote", "play ok")
+                } catch (e: Exception) {
+                    Log.i("TidalRemote", "play failed: ${e.message}")
+                } finally {
+                    pending.finish()
+                }
+            }
             return
         }
         val cmd = intent.getStringArrayExtra("cmd")?.toList() ?: return

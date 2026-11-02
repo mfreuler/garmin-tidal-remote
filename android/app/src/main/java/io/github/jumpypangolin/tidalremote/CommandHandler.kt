@@ -14,10 +14,9 @@ import java.net.URL
  *
  * Watch -> phone:  ["menu"] | ["mix", name] | ["genre", name] | ["search", term] | ["radio"]
  *                  | ["shuffle"] | ["playpause"] | ["next"] | ["prev"] | ["info"] | ["favon"] | ["favoff"] | ["poll"]
- *                  | ["playlists", offset] | ["playlist", index, name]
- * Phone -> watch:  ["menu", mixes[], genres[], searchTerms[], radioReady] | ["ok", text] | ["err", text] | ["song", text]
- *                  | ["note", text] (information such as "nothing playing", shown without the red "Failed")
- *                  | ["list", names[], offset, more]
+ *                  | ["fav", index, name]
+ * Phone -> watch:  ["menu", mixes[], genres[], searchTerms[], radioReady, favorites[]] | ["ok", text] | ["err", text]
+ *                  | ["song", text] | ["note", text] (information such as "nothing playing", shown without the red "Failed")
  */
 class CommandHandler(private val ctx: Context) {
 
@@ -44,8 +43,7 @@ class CommandHandler(private val ctx: Context) {
                 "mix" -> ok(tidal.playMix(arg, shuffle))
                 "genre" -> ok(tidal.playGenre(arg, shuffle))
                 "search" -> ok(tidal.playSearch(arg, shuffle))
-                "playlists" -> playlists(arg.toIntOrNull() ?: 0)
-                "playlist" -> ok(tidal.playPlaylist(arg.toIntOrNull() ?: -1, msg.getOrNull(2) ?: "", shuffle))
+                "fav" -> ok(playFavorite(arg.toIntOrNull() ?: -1, msg.getOrNull(2) ?: "", shuffle))
                 "radio" -> ok(radio(shuffle))
                 "shuffle" -> ok(if (tidal.toggleShuffle()) "Shuffle on" else "Shuffle off")
                 "playpause" -> ok(tidal.playPause())
@@ -69,7 +67,6 @@ class CommandHandler(private val ctx: Context) {
         // One short line per reply: the menu lists are long and song info spans two lines.
         val summary = when (reply.firstOrNull()) {
             "menu" -> "menu (${(reply[1] as List<*>).size} mixes)"
-            "list" -> "list (${(reply[1] as List<*>).size} playlists)"
             else -> reply.joinToString(" ")
         }
         CommandLog.add(ctx, "← ${summary.replace("\n", " / ").take(80)}")
@@ -83,13 +80,17 @@ class CommandHandler(private val ctx: Context) {
         } catch (e: Exception) {
             config.cachedMixes
         }
-        return listOf("menu", mixes, config.genres, config.searchTerms, radioReady())
+        return listOf("menu", mixes, config.genres, config.searchTerms, radioReady(), config.favorites.map { it.second })
     }
 
-    private suspend fun playlists(offset: Int): List<Any> {
-        val (names, more) = tidal.playlistPage(offset)
-        if (names.isEmpty()) throw TidalException("No favorite playlists")
-        return listOf("list", names, offset, more)
+    /** The position in the list tells playlists with the same name apart; the name guards against a changed list. */
+    private suspend fun playFavorite(index: Int, name: String, shuffle: Boolean): String {
+        val list = config.favorites
+        val pick = list.getOrNull(index)?.takeIf { it.second == name }
+            ?: list.firstOrNull { it.second == name }
+            ?: throw TidalException("Not in favorites: $name")
+        tidal.playId(pick.first, shuffle)
+        return pick.second
     }
 
     /** Track radio needs the Tidal API login; without it the watch hides the menu item. */

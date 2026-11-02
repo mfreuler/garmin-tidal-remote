@@ -56,6 +56,12 @@ class MainActivity : Activity() {
     private lateinit var genreSummary: TextView
     private lateinit var genreList: LinearLayout
     private lateinit var genreEdit: Button
+    private lateinit var favoritesSection: Section
+    private lateinit var favSummary: TextView
+    private lateinit var favList: LinearLayout
+    private lateinit var favEdit: Button
+    private var availablePlaylists: List<Pair<String, String>> = emptyList()
+    private var chosenFavorites: List<Pair<String, String>> = emptyList()
     private var availableGenres: List<String> = emptyList()
     private var chosenGenres: List<String> = emptyList()
     private lateinit var setupSection: Section
@@ -125,9 +131,21 @@ class MainActivity : Activity() {
         setupSection.open = !updateSetupStatus()
 
         // Same order and names as the watch menu.
-        genresSection = section("2. Genres", key = "open_genres", defaultOpen = true)
+        favoritesSection = section("2. Favorites", key = "open_favorites", defaultOpen = true)
+        add(help("The playlists in the watch's Favorites menu, sorted by name. To add one of Tidal's own playlists, " +
+            "heart it in the Tidal app first. Favorite tracks plays the songs you have hearted."), top = 0)
+        favSummary = TextView(this).apply { textSize = 15f }.also { add(it, top = 8) }
+        favList = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            visibility = View.GONE
+        }.also { add(it, top = 8) }
+        favEdit = button("Edit favorites") { toggleFavList() }.also { add(it, top = 8) }
+        availablePlaylists = config.cachedPlaylists
+        showFavorites(config.favorites)
+
+        genresSection = section("3. Genres", key = "open_genres", defaultOpen = true)
         add(help("The genres on the watch. The watch plays a random playlist from the chosen genre. " +
-            "My Mix and Favorites need no setup: they come from Tidal."), top = 0)
+            "My Mix needs no setup: it comes from Tidal."), top = 0)
         genreSummary = TextView(this).apply { textSize = 15f }.also { add(it, top = 8) }
         // The full checklist opens in place, in the same style as the rest of the app.
         genreList = LinearLayout(this).apply {
@@ -142,11 +160,11 @@ class MainActivity : Activity() {
         showGenres(config.cachedGenres, config.genres)
         loadFromTidal()
 
-        searchSection = section("3. Search", key = "open_search", defaultOpen = true)
+        searchSection = section("4. Search", key = "open_search", defaultOpen = true)
         add(help("Search terms, one per line, any words. The watch plays a random playlist from Tidal's search results."), top = 0)
         terms = multiline(config.searchTerms).also { add(it, top = 8) }
 
-        radioSection = section("4. Track radio", key = "open_radio", defaultOpen = false)
+        radioSection = section("5. Track radio", key = "open_radio", defaultOpen = false)
         add(help("Optional, only needed for Track radio. Sign in at developer.tidal.com with your Tidal account, " +
             "create an app, and copy its Client ID and Client secret here."), top = 0)
         add(label("Client ID"), top = 16)
@@ -253,6 +271,7 @@ class MainActivity : Activity() {
 
     private fun save() {
         config.genres = checkedGenres()
+        config.favorites = Config.sortFavorites(chosenFavorites)
         config.searchTerms = terms.text.lines()
         config.clientId = clientId.text.toString()
         config.clientSecret = clientSecret.text.toString()
@@ -280,6 +299,12 @@ class MainActivity : Activity() {
                 tidalFailed = false
                 gettingStarted.visibility = View.GONE
                 tidal.mixNames().let { if (it.isNotEmpty()) config.cachedMixes = it }
+                tidal.playlistEntries().let {
+                    if (it.isNotEmpty()) {
+                        config.cachedPlaylists = it
+                        availablePlaylists = it
+                    }
+                }
             } catch (e: Exception) {
                 genreInfo.text = "Could not load Tidal's genres (${e.message ?: e.javaClass.simpleName}). Showing the last known list."
                 genreInfo.visibility = View.VISIBLE
@@ -326,9 +351,43 @@ class MainActivity : Activity() {
         genreEdit.text = if (opening) "Done" else "Edit genres"
     }
 
+    private fun showFavorites(chosen: List<Pair<String, String>>) {
+        chosenFavorites = Config.sortFavorites(chosen)
+        favSummary.text = chosenFavorites.joinToString(", ") { it.second }
+            .ifEmpty { "None chosen yet. The watch shows a note until you pick some." }
+        updateSummaries()
+    }
+
+    /** The checklist: Favorite tracks, then every playlist in the Tidal collection, sorted by name. */
+    private fun toggleFavList() {
+        val opening = favList.visibility != View.VISIBLE
+        if (opening) {
+            favList.removeAllViews()
+            val chosenIds = chosenFavorites.map { it.first }.toSet()
+            // Chosen ones stay listed even if Tidal's list could not be loaded.
+            val items = Config.sortFavorites((listOf(Config.FAVORITE_TRACKS) + availablePlaylists + chosenFavorites).distinctBy { it.first })
+            for (item in items) {
+                favList.addView(CheckBox(this).apply {
+                    text = item.second
+                    isChecked = item.first in chosenIds
+                    buttonTintList = ColorStateList.valueOf(ACCENT)
+                    setOnCheckedChangeListener { _, on ->
+                        chosenFavorites = if (on) chosenFavorites + item else chosenFavorites.filter { it.first != item.first }
+                    }
+                })
+            }
+        } else {
+            showFavorites(chosenFavorites)
+        }
+        favList.visibility = if (opening) View.VISIBLE else View.GONE
+        favSummary.visibility = if (opening) View.GONE else View.VISIBLE
+        favEdit.text = if (opening) "Done" else "Edit favorites"
+    }
+
     /** The one-line summaries shown next to a folded section's heading. */
     private fun updateSummaries() {
         if (!::radioSection.isInitialized || !::otherSection.isInitialized) return
+        favoritesSection.summary.text = "${chosenFavorites.size} playlists"
         genresSection.summary.text = "${chosenGenres.size} genres"
         searchSection.summary.text = "${terms.text.lines().count { it.isNotBlank() }} search terms"
         val radio = clientId.text.isNotBlank() && clientSecret.text.isNotBlank()

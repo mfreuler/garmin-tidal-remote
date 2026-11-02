@@ -9,10 +9,9 @@ import Toybox.WatchUi;
 //! Watch side of Tidal Remote: menus on the watch, commands go to the phone app.
 //! Watch -> phone:  ["menu"] | ["mix", name] | ["genre", name] | ["search", term] | ["radio"]
 //!                  | ["shuffle"] | ["playpause"] | ["next"] | ["prev"] | ["info"] | ["favon"] | ["favoff"] | ["poll"]
-//!                  | ["playlists", offset] | ["playlist", index, name]
-//! Phone -> watch:  ["menu", mixes[], genres[], searchTerms[], radioReady] | ["ok", text] | ["err", text] | ["song", text]
-//!                  | ["note", text]
-//!                  | ["list", names[], offset, more]
+//!                  | ["fav", index, name]
+//! Phone -> watch:  ["menu", mixes[], genres[], searchTerms[], radioReady, favorites[]] | ["ok", text] | ["err", text]
+//!                  | ["song", text] | ["note", text]
 //! On newer watches (e.g. Fenix 7 Pro) a device app can also have a glance line, so one app covers both.
 (:glance)
 class TidalRemoteApp extends Application.AppBase {
@@ -60,14 +59,6 @@ class TidalRemoteApp extends Application.AppBase {
         WatchUi.pushView(view, info ? new NowPlayingDelegate(view) : new WatchUi.BehaviorDelegate(), WatchUi.SLIDE_LEFT);
         log("send " + cmd[0]);
         Communications.transmit(cmd, null, new CommandListener(view));
-    }
-
-    //! Replaces the current playlist page with the next one, so the watch only ever holds one page.
-    function nextPlaylists(offset as Number) as Void {
-        var view = new ResultView("Favorites", true);
-        _result = view;
-        WatchUi.switchToView(view, new WatchUi.BehaviorDelegate(), WatchUi.SLIDE_LEFT);
-        Communications.transmit(["playlists", offset.toString()], null, new CommandListener(view));
     }
 
     function showingList(title as String, command as String, key as String) as Void {
@@ -162,15 +153,10 @@ class TidalRemoteApp extends Application.AppBase {
             if (data.size() > 4) {
                 updateRadio(data[4] == true);
             }
-            refreshList();
-        } else if (_result != null && "list".equals(kind) && data.size() > 3 && data[1] instanceof Array) {
-            // Only if the loading screen is still open: the list must not replace another screen.
-            if ((_result as ResultView).isWaiting()) {
-                var names = data[1] as Array;
-                var offset = data[2] as Number;
-                WatchUi.switchToView(buildPlaylistMenu(names, offset, data[3] == true),
-                    new PlaylistDelegate(offset + names.size()), WatchUi.SLIDE_LEFT);
+            if (data.size() > 5) {
+                Lists.save(Lists.FAVORITES, data[5]);
             }
+            refreshList();
         } else if (_result != null && "song".equals(kind) && data.size() > 1) {
             (_result as ResultView).updateSong(data[1].toString());
         } else if (_result != null && "note".equals(kind)) {

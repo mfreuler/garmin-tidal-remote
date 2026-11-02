@@ -128,10 +128,6 @@ class ResultView extends WatchUi.View {
         Communications.transmit([command], null, new CommandListener(self));
     }
 
-    function isWaiting() as Boolean {
-        return _visible && !_done;
-    }
-
     function onTimeout() as Void {
         log("no reply within 25 s");
         show(false, "No reply from phone");

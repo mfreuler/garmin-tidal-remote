@@ -32,7 +32,6 @@ class TidalController(private val ctx: Context) {
         private const val MIXES_PAGE = "HOME_V2::home/pages/DAILY_MIXES/view-all"
         private const val GENRES_PAGE = "DYNAMIC::pages/genre_page"
         private const val PLAYLISTS = "MY_COLLECTION_PLAYLIST"
-        private const val PLAYLIST_PAGE = 25 // Must match "Next 25" on the watch.
         private const val ACTION_SHUFFLE = "com.aspiro.tidal.player.action.TOGGLE_SHUFFLE"
         private const val ICON_SHUFFLE_ON = "ic_shuffle_active"
         private const val ACTION_FAVORITE = "com.aspiro.tidal.player.action.TOGGLE_FAVORITE"
@@ -72,21 +71,12 @@ class TidalController(private val ctx: Context) {
         title(pick)
     }
 
-    /** One page of playlist names from the user's Tidal collection, and whether more follow. */
-    suspend fun playlistPage(offset: Int): Pair<List<String>, Boolean> = session { b, _ ->
-        val list = playlists(b)
-        list.drop(offset).take(PLAYLIST_PAGE).map { title(it) } to (list.size > offset + PLAYLIST_PAGE)
-    }
+    /** The playlists in the user's Tidal collection, as media ID and name. */
+    suspend fun playlistEntries(): List<Pair<String, String>> =
+        session { b, _ -> playlists(b).map { it.mediaId!! to title(it).trim() } }
 
-    /** Plays a collection playlist. The position tells playlists with the same name apart. */
-    suspend fun playPlaylist(index: Int, name: String, autoShuffle: Boolean): String = session { b, c ->
-        val list = playlists(b)
-        val pick = list.getOrNull(index)?.takeIf { title(it) == name }
-            ?: list.firstOrNull { title(it) == name }
-            ?: throw TidalException("Playlist not found: $name")
-        play(c, pick.mediaId!!, autoShuffle)
-        title(pick)
-    }
+    /** Plays a Tidal item by its media ID, for example a favorite playlist. */
+    suspend fun playId(mediaId: String, autoShuffle: Boolean) = session { _, c -> play(c, mediaId, autoShuffle) }
 
     /** Media ID (Tidal track ID) and title of the track currently loaded in Tidal. */
     suspend fun currentTrack(): Pair<String, String> = session { _, c ->

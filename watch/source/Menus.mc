@@ -9,6 +9,7 @@ module Lists {
     const MIXES = "mixes";
     const GENRES = "genres";
     const SEARCH = "search";
+    const FAVORITES = "favorites";
     const RADIO_READY = "radioReady";
 
     function get(key as String) as Array {
@@ -20,6 +21,8 @@ module Lists {
             return ["My Mix 1", "My Mix 2", "My Mix 3", "My Mix 4", "My Mix 5", "My Mix 6", "My Mix 7", "My Mix 8"];
         } else if (key.equals(GENRES)) {
             return ["Dance & Electronic", "Rock / Indie", "Reggae / Dancehall", "R&B / Soul", "Blues", "Jazz"];
+        } else if (key.equals(FAVORITES)) {
+            return [];
         }
         return ["House", "Deep House", "Dancehall", "Rock", "Indie Rock"];
     }
@@ -78,7 +81,7 @@ class MainMenuDelegate extends WatchUi.Menu2InputDelegate {
         if (id == :mix) {
             pushList("My Mix", "mix", Lists.MIXES);
         } else if (id == :favorites) {
-            getTidalApp().sendCommand(["playlists", "0"], "Favorites");
+            pushList("Favorites", "fav", Lists.FAVORITES);
         } else if (id == :genre) {
             pushList("Genre", "genre", Lists.GENRES);
         } else if (id == :search) {
@@ -96,54 +99,30 @@ class MainMenuDelegate extends WatchUi.Menu2InputDelegate {
     }
 
     private function pushList(title as String, command as String, key as String) as Void {
-        WatchUi.pushView(buildList(title, key), new ListDelegate(command), WatchUi.SLIDE_LEFT);
-        // The stored list is shown at once; the phone's current one replaces it when it arrives.
-        getTidalApp().showingList(title, command, key);
+        // Asks for the phone's current lists in any case; the stored copy is shown at once and replaced on arrival.
         Communications.transmit(["menu"], null, new SilentListener());
-    }
-}
-
-//! One page of the phone's playlists. The ID is the position, because two playlists can have the same name.
-function buildPlaylistMenu(names as Array, offset as Number, more as Boolean) as WatchUi.Menu2 {
-    var menu = new WatchUi.Menu2({ :title => "Favorites" });
-    for (var i = 0; i < names.size(); i++) {
-        menu.addItem(new WatchUi.MenuItem(names[i].toString(), null, offset + i, null));
-    }
-    if (more) {
-        menu.addItem(new WatchUi.MenuItem("Next 25", null, :next, null));
-    }
-    return menu;
-}
-
-class PlaylistDelegate extends WatchUi.Menu2InputDelegate {
-    private var _nextOffset as Number;
-
-    function initialize(nextOffset as Number) {
-        Menu2InputDelegate.initialize();
-        _nextOffset = nextOffset;
-    }
-
-    function onSelect(item as WatchUi.MenuItem) as Void {
-        if (item.getId() == :next) {
-            getTidalApp().nextPlaylists(_nextOffset);
+        if (Lists.get(key).size() == 0) {
+            var note = new ResultView(title, true);
+            note.showNote("Pick playlists in the phone app");
+            WatchUi.pushView(note, new WatchUi.BehaviorDelegate(), WatchUi.SLIDE_LEFT);
             return;
         }
-        var name = item.getLabel() as String;
-        getTidalApp().sendCommand(["playlist", item.getId().toString(), name], name);
+        WatchUi.pushView(buildList(title, key), new ListDelegate(command), WatchUi.SLIDE_LEFT);
+        getTidalApp().showingList(title, command, key);
     }
 }
 
+//! The ID is the position, because two favorite playlists can have the same name.
 function buildList(title as String, key as String) as WatchUi.Menu2 {
     var menu = new WatchUi.Menu2({ :title => title });
     var names = Lists.get(key);
     for (var i = 0; i < names.size(); i++) {
-        var name = names[i].toString();
-        menu.addItem(new WatchUi.MenuItem(name, null, name, null));
+        menu.addItem(new WatchUi.MenuItem(names[i].toString(), null, i, null));
     }
     return menu;
 }
 
-//! A list entry was picked: send [command, name] to the phone.
+//! A list entry was picked: send [command, name] to the phone; favorites also send the position.
 //! Both ways of leaving the list tell the app, so it never swaps in a fresh copy over another screen.
 class ListDelegate extends WatchUi.Menu2InputDelegate {
     private var _command as String;
@@ -155,8 +134,9 @@ class ListDelegate extends WatchUi.Menu2InputDelegate {
 
     function onSelect(item as WatchUi.MenuItem) as Void {
         getTidalApp().leftList();
-        var name = item.getId() as String;
-        getTidalApp().sendCommand([_command, name], name);
+        var name = item.getLabel() as String;
+        var cmd = "fav".equals(_command) ? [_command, item.getId().toString(), name] : [_command, name];
+        getTidalApp().sendCommand(cmd, name);
     }
 
     function onBack() as Void {

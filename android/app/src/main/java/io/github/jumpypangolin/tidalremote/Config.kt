@@ -15,6 +15,13 @@ class Config(private val ctx: Context) {
             "Dance & Electronic", "Rock / Indie", "Reggae / Dancehall", "R&B / Soul", "Blues", "Jazz",
         )
         val DEFAULT_SEARCH_TERMS = listOf("House", "Deep House", "Dancehall", "Rock", "Indie Rock")
+
+        /** The songs hearted in Tidal, which Tidal offers as one playable list. */
+        val FAVORITE_TRACKS = "MY_COLLECTION_TRACKS" to "Favorite tracks"
+
+        /** Favorite tracks first, then by name, as the watch shows them. */
+        fun sortFavorites(list: List<Pair<String, String>>) =
+            list.sortedWith(compareBy({ it.first != FAVORITE_TRACKS.first }, { it.second.lowercase() }))
     }
 
     private val prefs = ctx.getSharedPreferences("config", Context.MODE_PRIVATE)
@@ -36,6 +43,16 @@ class Config(private val ctx: Context) {
     var cachedMixes: List<String>
         get() = lines("cachedMixes", (1..8).map { "My Mix $it" })
         set(v) = setLines("cachedMixes", v)
+
+    /** The playlists for the watch's Favorites menu, as Tidal media ID and name, sorted by name. */
+    var favorites: List<Pair<String, String>>
+        get() = pairs("favorites")
+        set(v) = setPairs("favorites", v)
+
+    /** The playlists in the Tidal collection, last read from Tidal, for the picker. */
+    var cachedPlaylists: List<Pair<String, String>>
+        get() = pairs("cachedPlaylists")
+        set(v) = setPairs("cachedPlaylists", v)
 
     var clientId: String
         get() = prefs.getString("clientId", "")!!
@@ -63,6 +80,15 @@ class Config(private val ctx: Context) {
 
     private fun lines(key: String, default: List<String>): List<String> =
         prefs.getString(key, null)?.lines()?.map { it.trim() }?.filter { it.isNotEmpty() } ?: default
+
+    /** ID and name per line, separated by a tab; the ID tells playlists with the same name apart. */
+    private fun pairs(key: String): List<Pair<String, String>> =
+        lines(key, emptyList()).mapNotNull { line ->
+            line.split('\t', limit = 2).takeIf { it.size == 2 }?.let { it[0] to it[1] }
+        }
+
+    private fun setPairs(key: String, v: List<Pair<String, String>>) =
+        setLines(key, v.map { "${it.first}\t${it.second.replace('\t', ' ').replace('\n', ' ')}" })
 
     private fun setLines(key: String, v: List<String>) =
         prefs.edit().putString(key, v.map { it.trim() }.filter { it.isNotEmpty() }.joinToString("\n")).apply()

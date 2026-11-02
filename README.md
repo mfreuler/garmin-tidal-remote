@@ -19,7 +19,7 @@ Tidal app → plays the music
 | Menu item | What happens |
 |-----------|--------------|
 | **My Mix** | Pick one of your Tidal mixes (My Mix 1–8, My Daily Discovery, …). The list comes from Tidal. |
-| **Favorites** | Pick one of the playlists in your Tidal collection. The list is loaded from Tidal each time, 25 at a time. **Next 25** at the end of the list loads the following ones. |
+| **Favorites** | Pick one of the playlists you chose in the companion app, sorted by name. **Favorite tracks** plays the songs you hearted in Tidal. |
 | **Genre** | Pick a genre. A random playlist from Tidal's page for that genre starts. |
 | **Search** | Pick a search term. A random playlist from Tidal's search results starts. |
 | **Track radio** | Starts Tidal's radio for the song that is playing. Only shown once the Tidal developer login is set up (see below). |
@@ -155,7 +155,8 @@ Notification access is mandatory; the two battery settings are strongly recommen
 
 All lists are edited in the companion app; the watch app never needs a rebuild for this.
 
-- **My Mix** and **Favorites**: come from Tidal automatically.
+- **My Mix**: comes from Tidal automatically.
+- **Favorites**: tap **Edit favorites** and tick the playlists you want, plus **Favorite tracks** if you like. The list shows every playlist in your Tidal collection; to add one of Tidal's own playlists, heart it in the Tidal app first.
 - **Genres**: tap **Edit genres** and tick the genres you want. The list is loaded from Tidal each time you open the app. Ticked genres are shown first, in the order they appear on the watch; a newly ticked genre is added at the end.
 - **Search**: search terms, one per line, any words.
 
