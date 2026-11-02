@@ -21,6 +21,10 @@ class TidalRemoteApp extends Application.AppBase {
     // Created in getInitialView: the glance line can't load the menu classes.
     private var _title as StatusTitle?;
     private var _timer as Timer.Timer?;
+    // The open My Mix / Genre / Search list, so a fresh copy from the phone can replace its items.
+    private var _list as WatchUi.Menu2?;
+    private var _listKey as String?;
+    private var _listNames as Array?;
 
     function initialize() {
         AppBase.initialize();
@@ -63,6 +67,47 @@ class TidalRemoteApp extends Application.AppBase {
         _result = view;
         WatchUi.switchToView(view, new WatchUi.BehaviorDelegate(), WatchUi.SLIDE_LEFT);
         Communications.transmit(["playlists", offset.toString()], null, new CommandListener(view));
+    }
+
+    function showingList(menu as WatchUi.Menu2, key as String) as Void {
+        _list = menu;
+        _listKey = key;
+        _listNames = Lists.get(key);
+    }
+
+    //! Rebuilds the open list if the phone's copy differs from what it shows.
+    private function refreshList() as Void {
+        var menu = _list;
+        var key = _listKey;
+        var old = _listNames;
+        if (menu == null || key == null || old == null) {
+            return;
+        }
+        var names = Lists.get(key);
+        if (sameNames(old, names)) {
+            return;
+        }
+        for (var i = old.size() - 1; i >= 0; i--) {
+            menu.deleteItem(i);
+        }
+        for (var i = 0; i < names.size(); i++) {
+            var name = names[i].toString();
+            menu.addItem(new WatchUi.MenuItem(name, null, name, null));
+        }
+        _listNames = names;
+        WatchUi.requestUpdate();
+    }
+
+    private function sameNames(a as Array, b as Array) as Boolean {
+        if (a.size() != b.size()) {
+            return false;
+        }
+        for (var i = 0; i < a.size(); i++) {
+            if (!a[i].toString().equals(b[i].toString())) {
+                return false;
+            }
+        }
+        return true;
     }
 
     //! Updates the dot next to the menu title: did the phone app answer?
@@ -119,6 +164,7 @@ class TidalRemoteApp extends Application.AppBase {
             if (data.size() > 4) {
                 updateRadio(data[4] == true);
             }
+            refreshList();
         } else if (_result != null && "list".equals(kind) && data.size() > 3 && data[1] instanceof Array) {
             // Only if the loading screen is still open: the list must not replace another screen.
             if ((_result as ResultView).isWaiting()) {

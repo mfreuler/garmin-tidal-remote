@@ -2,7 +2,6 @@ package io.github.jumpypangolin.tidalremote
 
 import android.Manifest
 import android.app.Activity
-import android.app.AlertDialog
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
@@ -55,6 +54,8 @@ class MainActivity : Activity() {
     /** Where add() puts views: the page, or the card of the current section. */
     private lateinit var container: LinearLayout
     private lateinit var genreSummary: TextView
+    private lateinit var genreList: LinearLayout
+    private lateinit var genreEdit: Button
     private var availableGenres: List<String> = emptyList()
     private var chosenGenres: List<String> = emptyList()
     private lateinit var setupSection: Section
@@ -128,7 +129,12 @@ class MainActivity : Activity() {
         add(help("The genres on the watch. The watch plays a random playlist from the chosen genre. " +
             "My Mix and Favorites need no setup: they come from Tidal."), top = 0)
         genreSummary = TextView(this).apply { textSize = 15f }.also { add(it, top = 8) }
-        add(button("Edit genres") { editGenres() }, top = 8)
+        // The full checklist opens in place, in the same style as the rest of the app.
+        genreList = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            visibility = View.GONE
+        }.also { add(it, top = 8) }
+        genreEdit = button("Edit genres") { toggleGenreList() }.also { add(it, top = 8) }
         genreInfo = help("").also {
             it.visibility = View.GONE
             add(it, top = 8)
@@ -295,21 +301,29 @@ class MainActivity : Activity() {
     private fun checkedGenres(): List<String> = chosenGenres
 
     /**
-     * The full checklist in a pop-up: the chosen genres first, in their order, then the rest of Tidal's list.
+     * Opens or closes the checklist: the chosen genres first, in their order, then the rest of Tidal's list.
      * Genres that stay ticked keep their place on the watch; newly ticked ones go at the end.
      */
-    private fun editGenres() {
-        val items = chosenGenres + availableGenres.filter { it !in chosenGenres }
-        val checked = BooleanArray(items.size) { items[it] in chosenGenres }
-        AlertDialog.Builder(this)
-            .setTitle("Genres on the watch")
-            .setMultiChoiceItems(items.toTypedArray(), checked) { _, i, on -> checked[i] = on }
-            .setPositiveButton("OK") { _, _ ->
-                val picked = items.filterIndexed { i, _ -> checked[i] }
-                showGenres(availableGenres, chosenGenres.filter { it in picked } + picked.filter { it !in chosenGenres })
+    private fun toggleGenreList() {
+        val opening = genreList.visibility != View.VISIBLE
+        if (opening) {
+            genreList.removeAllViews()
+            for (name in chosenGenres + availableGenres.filter { it !in chosenGenres }) {
+                genreList.addView(CheckBox(this).apply {
+                    text = name
+                    isChecked = name in chosenGenres
+                    buttonTintList = ColorStateList.valueOf(ACCENT)
+                    setOnCheckedChangeListener { _, on ->
+                        chosenGenres = if (on) chosenGenres + name else chosenGenres - name
+                    }
+                })
             }
-            .setNegativeButton("Cancel", null)
-            .show()
+        } else {
+            showGenres(availableGenres, chosenGenres)
+        }
+        genreList.visibility = if (opening) View.VISIBLE else View.GONE
+        genreSummary.visibility = if (opening) View.GONE else View.VISIBLE
+        genreEdit.text = if (opening) "Done" else "Edit genres"
     }
 
     /** The one-line summaries shown next to a folded section's heading. */

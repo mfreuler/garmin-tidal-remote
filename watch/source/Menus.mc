@@ -1,4 +1,5 @@
 import Toybox.Application;
+import Toybox.Communications;
 import Toybox.Graphics;
 import Toybox.Lang;
 import Toybox.WatchUi;
@@ -102,6 +103,9 @@ class MainMenuDelegate extends WatchUi.Menu2InputDelegate {
             menu.addItem(new WatchUi.MenuItem(name, null, name, null));
         }
         WatchUi.pushView(menu, new ListDelegate(command), WatchUi.SLIDE_LEFT);
+        // The stored list is shown at once; the phone's current one replaces it when it arrives.
+        getTidalApp().showingList(menu, key);
+        Communications.transmit(["menu"], null, new SilentListener());
     }
 }
 
