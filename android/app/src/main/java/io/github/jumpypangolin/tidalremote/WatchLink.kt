@@ -7,6 +7,7 @@ import com.garmin.android.connectiq.IQDevice
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -17,6 +18,8 @@ import kotlinx.coroutines.withContext
  * the app per message. Garmin Connect 5.30.1 accepted the registration but never delivered a message.
  */
 object WatchLink {
+
+    private const val CHECK_TIMEOUT = 10_000L
 
     /** Set by the debug build to use the Connect IQ simulator over adb instead of the real watch. */
     var connectType = ConnectIQ.IQConnectType.WIRELESS
@@ -113,15 +116,23 @@ object WatchLink {
         try {
             for (device in instance.knownDevices ?: emptyList()) {
                 CommandLog.add(ctx, "Check ${device.friendlyName}: ${instance.getDeviceStatus(device).name.lowercase().replace('_', ' ')}")
+                var answered = false
                 instance.getApplicationInfo(Config.WATCH_APP_IDS[0], device, object : ConnectIQ.IQApplicationInfoListener {
                     override fun onApplicationInfoReceived(app: IQApp) {
+                        answered = true
                         CommandLog.add(ctx, "Check: watch answered, Tidal Remote installed")
                     }
 
                     override fun onApplicationNotInstalled(applicationId: String) {
+                        answered = true
                         CommandLog.add(ctx, "Check: watch answered, Tidal Remote not installed")
                     }
                 })
+                // "Connected" only means Bluetooth; silence here means the watch's app channel is stuck.
+                scope.launch {
+                    delay(CHECK_TIMEOUT)
+                    if (!answered) CommandLog.add(ctx, "Check: NO answer from the watch. Restart the watch")
+                }
             }
         } catch (e: Exception) {
             CommandLog.add(ctx, "Check failed: ${e.javaClass.simpleName}")

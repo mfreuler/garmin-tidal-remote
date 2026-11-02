@@ -167,7 +167,7 @@ class MainActivity : Activity() {
             // The watch's answer takes a moment.
             log.postDelayed({ refreshLog() }, 3000)
         }, top = 8)
-        add(help("If no \"watch answered\" line appears within a few seconds, Garmin Connect can't reach the watch app."))
+        add(help("\"Connected\" only means Bluetooth. The watch app is reachable only if \"watch answered\" appears."))
         add(log, top = 8)
 
         container = root

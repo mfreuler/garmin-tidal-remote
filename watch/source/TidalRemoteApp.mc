@@ -1,6 +1,8 @@
 import Toybox.Application;
 import Toybox.Communications;
 import Toybox.Lang;
+import Toybox.System;
+import Toybox.Time;
 import Toybox.Timer;
 import Toybox.WatchUi;
 
@@ -25,6 +27,7 @@ class TidalRemoteApp extends Application.AppBase {
 
     //! Only called when the full app opens, not for the glance line.
     function getInitialView() as [Views] or [Views, InputDelegates] {
+        log("app opened");
         Communications.registerForPhoneAppMessages(method(:onPhone));
         // Refresh the menu lists in the background; the stored copy is used until the reply arrives.
         // Its reply also sets the connection dot next to the title.
@@ -49,6 +52,7 @@ class TidalRemoteApp extends Application.AppBase {
         var view = new ResultView(title, !info);
         _result = view;
         WatchUi.pushView(view, info ? new NowPlayingDelegate(view) : new WatchUi.BehaviorDelegate(), WatchUi.SLIDE_LEFT);
+        log("send " + cmd[0]);
         Communications.transmit(cmd, null, new CommandListener(view));
     }
 
@@ -105,6 +109,7 @@ class TidalRemoteApp extends Application.AppBase {
             data = data[0] as Array;
         }
         var kind = data[0];
+        log("got " + kind);
         setReachable(true);
         if ("menu".equals(kind) && data.size() >= 4) {
             Lists.save(Lists.MIXES, data[1]);
@@ -140,6 +145,7 @@ class SilentListener extends Communications.ConnectionListener {
     }
 
     function onError() as Void {
+        log("background send failed");
         getTidalApp().setReachable(false);
     }
 }
@@ -158,9 +164,18 @@ class CommandListener extends Communications.ConnectionListener {
     }
 
     function onError() as Void {
+        log("send failed: phone not reachable");
         _view.show(false, "Phone not reachable");
         getTidalApp().setReachable(false);
     }
+}
+
+//! Diagnostics for the gym problem. A sideloaded app writes this to GARMIN/APPS/LOGS/<prg name>.TXT,
+//! but only if that file already exists on the watch.
+function log(text as String) as Void {
+    var t = Time.Gregorian.info(Time.now(), Time.FORMAT_SHORT);
+    System.println(Lang.format("$1$-$2$ $3$:$4$:$5$ $6$",
+        [t.month, t.day.format("%02d"), t.hour.format("%02d"), t.min.format("%02d"), t.sec.format("%02d"), text]));
 }
 
 function getTidalApp() as TidalRemoteApp {

@@ -110,6 +110,7 @@ class ResultView extends WatchUi.View {
     }
 
     function onTimeout() as Void {
+        log("no reply within 25 s");
         show(false, "No reply from phone");
     }
 
