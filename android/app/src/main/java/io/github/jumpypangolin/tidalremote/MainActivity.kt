@@ -199,8 +199,10 @@ class MainActivity : Activity() {
             setTextColor(Color.BLACK)
         }, top = 12)
 
-        // Grey: for when something goes wrong, so it stands back from the settings.
-        section("Debugging", key = "open_log", defaultOpen = true, color = MUTED)
+        // Grey and set apart from Save: for when something goes wrong, so it stands back from the settings.
+        section("Debugging", key = "open_log", defaultOpen = true, color = MUTED).card.apply {
+            (layoutParams as LinearLayout.LayoutParams).topMargin = dp(32)
+        }
         add(help("What the watch sent and how it went, newest first. Useful when something does not work."), top = 0)
         log = TextView(this).apply {
             setTextIsSelectable(true)
@@ -227,7 +229,7 @@ class MainActivity : Activity() {
         add(help(DISCLAIMER).apply {
             textSize = 11f
             gravity = android.view.Gravity.CENTER
-        }, top = 24)
+        }, top = 16)
 
         // Android 15+ draws apps behind the status and navigation bars; keep the content clear of them.
         root.setOnApplyWindowInsetsListener { v, insets ->
