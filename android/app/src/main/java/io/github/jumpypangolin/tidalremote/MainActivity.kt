@@ -199,7 +199,8 @@ class MainActivity : Activity() {
             setTextColor(Color.BLACK)
         }, top = 12)
 
-        section("Debugging", key = "open_log", defaultOpen = true)
+        // Grey: for when something goes wrong, so it stands back from the settings.
+        section("Debugging", key = "open_log", defaultOpen = true, color = MUTED)
         add(help("What the watch sent and how it went, newest first. Useful when something does not work."), top = 0)
         log = TextView(this).apply {
             setTextIsSelectable(true)
@@ -454,7 +455,7 @@ class MainActivity : Activity() {
     }
 
     /** A rounded card with a heading. A collapsible one folds away when its heading is tapped. */
-    private inner class Section(private val title: String, private val collapsible: Boolean) {
+    private inner class Section(private val title: String, private val collapsible: Boolean, color: Int) {
         val card = LinearLayout(this@MainActivity).apply {
             orientation = LinearLayout.VERTICAL
             background = GradientDrawable().apply {
@@ -469,7 +470,7 @@ class MainActivity : Activity() {
         }
         private val heading = TextView(this@MainActivity).apply {
             textSize = 18f
-            setTextColor(ACCENT)
+            setTextColor(color)
             setTypeface(typeface, Typeface.BOLD)
         }
 
@@ -510,8 +511,10 @@ class MainActivity : Activity() {
      * Starts a section; following add() calls go into it. With a [key] it is collapsible and remembers
      * whether it was left open or folded.
      */
-    private fun section(title: String, collapsible: Boolean = false, key: String? = null, defaultOpen: Boolean = true): Section {
-        val s = Section(title, collapsible || key != null)
+    private fun section(
+        title: String, collapsible: Boolean = false, key: String? = null, defaultOpen: Boolean = true, color: Int = ACCENT,
+    ): Section {
+        val s = Section(title, collapsible || key != null, color)
         root.addView(s.card, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
             topMargin = dp(12)
         })
