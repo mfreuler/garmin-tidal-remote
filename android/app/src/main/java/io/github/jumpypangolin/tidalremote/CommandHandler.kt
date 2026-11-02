@@ -16,6 +16,7 @@ import java.net.URL
  *                  | ["shuffle"] | ["playpause"] | ["next"] | ["prev"] | ["info"] | ["favon"] | ["favoff"] | ["poll"]
  *                  | ["playlists", offset] | ["playlist", index, name]
  * Phone -> watch:  ["menu", mixes[], genres[], searchTerms[], radioReady] | ["ok", text] | ["err", text] | ["song", text]
+ *                  | ["note", text] (information such as "nothing playing", shown without the red "Failed")
  *                  | ["list", names[], offset, more]
  */
 class CommandHandler(private val ctx: Context) {
@@ -55,6 +56,9 @@ class CommandHandler(private val ctx: Context) {
                 "favoff" -> ok(if (tidal.setFavorite(false)) "Favorite removed" else "Not a favorite")
                 else -> err("Unknown command $cmd")
             }
+        } catch (e: NothingPlaying) {
+            // Without internet Tidal also has nothing to play; that is the more useful message then.
+            if (online()) listOf("note", e.message ?: "") else err("No internet connection")
         } catch (e: TidalException) {
             failure(e.message ?: "Failed")
         } catch (e: kotlinx.coroutines.TimeoutCancellationException) {

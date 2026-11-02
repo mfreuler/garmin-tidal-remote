@@ -81,11 +81,34 @@ class ResultView extends WatchUi.View {
                 _song = text;
             }
         }
-        buzz(ok);
+        // Opening Now playing is not a command: it only buzzes if it fails.
+        if (!ok || !"info".equals(_pending)) {
+            buzz(ok);
+        }
         WatchUi.requestUpdate();
         if (ok && _autoClose) {
             _timer.start(method(:close), CLOSE_AFTER_OK_MS, false);
         }
+    }
+
+    //! Information such as "nothing playing": grey text instead of a red "Failed", and it stays on screen.
+    function showNote(text as String) as Void {
+        if (_done) {
+            return;
+        }
+        _done = true;
+        _timer.stop();
+        _status = "";
+        _detail = text;
+        _color = Graphics.COLOR_LT_GRAY;
+        _song = "";
+        if (!_autoClose) {
+            _title = NOW_PLAYING;
+        }
+        if (!"info".equals(_pending)) {
+            buzz(true);
+        }
+        WatchUi.requestUpdate();
     }
 
     //! Sends a playback command from the now playing screen. Ignored while the last one is still running.
@@ -137,13 +160,17 @@ class ResultView extends WatchUi.View {
             return;
         }
 
-        dc.setColor(_color, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(w / 2, h * 0.42, Graphics.FONT_MEDIUM, _status, Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+        // A note has no status line: its text sits in the middle, in grey.
+        var note = _status.length() == 0;
+        if (!note) {
+            dc.setColor(_color, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(w / 2, h * 0.42, Graphics.FONT_MEDIUM, _status, Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+        }
 
         if (_detail.length() > 0) {
             var text = Graphics.fitTextToArea(_detail, Graphics.FONT_SMALL, w * 0.75, h * 0.3, true);
-            dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(w / 2, h * 0.68, Graphics.FONT_SMALL, text, Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+            dc.setColor(note ? _color : Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(w / 2, note ? h * 0.5 : h * 0.68, Graphics.FONT_SMALL, text, Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
         }
     }
 

@@ -14,7 +14,10 @@ import kotlinx.coroutines.withTimeout
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-class TidalException(message: String) : Exception(message)
+open class TidalException(message: String) : Exception(message)
+
+/** Tidal has nothing loaded: information for the watch, not a failure. */
+class NothingPlaying(message: String) : TidalException(message)
 
 /**
  * Drives the Tidal app through its media browser (the interface Android Auto uses).
@@ -87,9 +90,9 @@ class TidalController(private val ctx: Context) {
 
     /** Media ID (Tidal track ID) and title of the track currently loaded in Tidal. */
     suspend fun currentTrack(): Pair<String, String> = session { _, c ->
-        val md = c.metadata ?: throw TidalException("Nothing playing in Tidal")
+        val md = c.metadata ?: throw NothingPlaying("Nothing playing in Tidal")
         val id = md.getString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID)
-            ?: throw TidalException("Nothing playing in Tidal")
+            ?: throw NothingPlaying("Nothing playing in Tidal")
         id to (md.getString(MediaMetadataCompat.METADATA_KEY_TITLE) ?: "")
     }
 
@@ -111,7 +114,7 @@ class TidalController(private val ctx: Context) {
 
     /** Adds or removes the current song; returns false if it already was in that state. */
     suspend fun setFavorite(on: Boolean): Boolean = session { _, c ->
-        if (c.metadata == null) throw TidalException("Nothing playing in Tidal")
+        if (c.metadata == null) throw NothingPlaying("Nothing playing in Tidal")
         if (actionIcon(c, ACTION_FAVORITE) == null) throw TidalException("Tidal has no favorite button here")
         if (isFavorite(c) == on) return@session false
         c.transportControls.sendCustomAction(ACTION_FAVORITE, Bundle())
@@ -134,12 +137,12 @@ class TidalController(private val ctx: Context) {
                 delay(150)
                 if (c.playbackState?.state == PlaybackStateCompat.STATE_PLAYING) return@session "Playing"
             }
-            throw TidalException("Nothing to resume. Pick a mix")
+            throw NothingPlaying("Nothing to resume. Pick a mix")
         }
     }
 
     /** Title and artist of the current track, on two lines. */
-    suspend fun nowPlaying(): String = session { _, c -> songInfo(c) ?: throw TidalException("Nothing playing in Tidal") }
+    suspend fun nowPlaying(): String = session { _, c -> songInfo(c) ?: throw NothingPlaying("Nothing playing in Tidal") }
 
     /** Skips to the next or previous track; returns the new title and artist. */
     suspend fun skip(forward: Boolean): String = session { _, c ->
@@ -152,7 +155,7 @@ class TidalController(private val ctx: Context) {
         }
         if (forward && c.metadata?.getString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID) == before &&
             c.playbackState?.state != PlaybackStateCompat.STATE_PLAYING
-        ) throw TidalException("Nothing playing. Pick a mix")
+        ) throw NothingPlaying("Nothing playing. Pick a mix")
         songInfo(c) ?: "Skipped"
     }
 

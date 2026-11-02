@@ -11,6 +11,7 @@ import Toybox.WatchUi;
 //!                  | ["shuffle"] | ["playpause"] | ["next"] | ["prev"] | ["info"] | ["favon"] | ["favoff"] | ["poll"]
 //!                  | ["playlists", offset] | ["playlist", index, name]
 //! Phone -> watch:  ["menu", mixes[], genres[], searchTerms[], radioReady] | ["ok", text] | ["err", text] | ["song", text]
+//!                  | ["note", text]
 //!                  | ["list", names[], offset, more]
 //! On newer watches (e.g. Fenix 7 Pro) a device app can also have a glance line, so one app covers both.
 (:glance)
@@ -128,6 +129,8 @@ class TidalRemoteApp extends Application.AppBase {
             }
         } else if (_result != null && "song".equals(kind) && data.size() > 1) {
             (_result as ResultView).updateSong(data[1].toString());
+        } else if (_result != null && "note".equals(kind)) {
+            (_result as ResultView).showNote(data.size() > 1 ? data[1].toString() : "");
         } else if (_result != null && ("ok".equals(kind) || "err".equals(kind))) {
             var text = data.size() > 1 ? data[1].toString() : "";
             (_result as ResultView).show("ok".equals(kind), text);
