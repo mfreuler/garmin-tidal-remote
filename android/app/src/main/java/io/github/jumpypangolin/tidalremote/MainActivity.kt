@@ -2,6 +2,7 @@ package io.github.jumpypangolin.tidalremote
 
 import android.Manifest
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
@@ -16,6 +17,7 @@ import android.text.InputType
 import android.text.SpannableStringBuilder
 import android.text.style.ForegroundColorSpan
 import android.text.method.PasswordTransformationMethod
+import android.view.Gravity
 import android.view.View
 import android.view.WindowInsets
 import android.widget.Button
@@ -40,6 +42,7 @@ class MainActivity : Activity() {
         private val MUTED = Color.rgb(160, 160, 160)
         private val WARNING = Color.rgb(230, 120, 80)
         private val CARD = Color.rgb(38, 38, 42)
+        private const val LOG_LINES = 10
         private const val DISCLAIMER = "Tidal Remote is an independent, non-commercial hobby project. " +
             "It is not affiliated with, endorsed or sponsored by TIDAL or Garmin. " +
             "TIDAL and Garmin are trademarks of their respective owners."
@@ -51,7 +54,15 @@ class MainActivity : Activity() {
 
     /** Where add() puts views: the page, or the card of the current section. */
     private lateinit var container: LinearLayout
-    private lateinit var genres: LinearLayout
+    private lateinit var genreSummary: TextView
+    private var availableGenres: List<String> = emptyList()
+    private var chosenGenres: List<String> = emptyList()
+    private lateinit var setupSection: Section
+    private lateinit var listsSection: Section
+    private lateinit var radioSection: Section
+    private lateinit var optionsSection: Section
+    private lateinit var logMore: Button
+    private var showAllLog = false
     private lateinit var terms: EditText
     private lateinit var clientId: EditText
     private lateinit var clientSecret: EditText
@@ -82,7 +93,7 @@ class MainActivity : Activity() {
             "Updates will be reflected on the watch after closing and re-opening the app."), top = 8)
 
         // Shown only while Tidal refuses: the first-time steps Android and Tidal don't make obvious.
-        gettingStarted = section("Getting started")
+        gettingStarted = section("Getting started").card
         add(help("Tidal Remote can't reach Tidal yet. Do these steps once:"))
         add(help("1. Turn on notification access for Tidal Remote. If Android says \"Restricted setting\", " +
             "open App info, tap ⋮ (top right) → Allow restricted settings, then try again."), top = 8)
@@ -95,7 +106,8 @@ class MainActivity : Activity() {
         add(button("Try again") { loadFromTidal() }, top = 8)
         gettingStarted.visibility = View.GONE
 
-        section("1. Phone setup")
+        // Open while something is missing; once all is set it folds away to one line.
+        setupSection = section("1. Phone setup", collapsible = true)
         add(help("Notification access is mandatory for Tidal to accept commands. Battery exception is strongly recommended " +
             "for Tidal Remote and Tidal to avoid time-out issues after a few hours of inactivity."))
         add(button("Allow access to Tidal notifications") {
@@ -105,12 +117,14 @@ class MainActivity : Activity() {
         // Android only lets an app request this for itself, so for Tidal open its App info page.
         add(button("Allow Tidal unrestricted (battery)") { openAppInfo(TidalController.TIDAL) }, top = 8)
         setupStatus = help("").also { add(it, top = 8) }
+        setupSection.open = !updateSetupStatus()
 
-        section("2. Watch lists")
-        add(help("\"My Mix\" section is populated automatically from Tidal."))
+        listsSection = section("2. Watch lists", key = "open_lists", defaultOpen = true)
+        add(help("\"My Mix\" and \"Favorites\" are populated automatically from Tidal."))
         add(label("Genres"), top = 12)
-        add(help("Select the genres to be available on the watch. The app will then play a random playlist from the chosen genre."))
-        genres = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }.also { add(it) }
+        add(help("The genres available on the watch. The app plays a random playlist from the chosen genre."))
+        genreSummary = TextView(this).apply { textSize = 15f }.also { add(it, top = 8) }
+        add(button("Edit genres") { editGenres() }, top = 8)
         genreInfo = help("").also { add(it) }
         showGenres(config.cachedGenres, config.genres)
         loadFromTidal()
@@ -118,7 +132,7 @@ class MainActivity : Activity() {
         add(help("One per line, any words. The watch plays a random playlist from Tidal's search results."))
         terms = multiline(config.searchTerms).also { add(it) }
 
-        section("3. Track radio (optional)")
+        radioSection = section("3. Track radio (optional)", key = "open_radio", defaultOpen = false)
         add(help("Only needed for Track radio. Sign in at developer.tidal.com with your Tidal account, " +
             "create an app, and copy its Client ID and Client secret here."))
         add(label("Client ID"))
@@ -131,7 +145,7 @@ class MainActivity : Activity() {
             "Track radio looks up its songs for this country."))
         country = field("CH", config.country, false).also { add(it) }
 
-        section("Options")
+        optionsSection = section("Options", key = "open_options", defaultOpen = false)
         add(label("Permanent notification"))
         add(help("Android shows a notification while the app listens for the watch. You can hide it, but some phones " +
             "may stop the app in the background without it. If the watch can't reach the phone, show it again."))
@@ -153,7 +167,7 @@ class MainActivity : Activity() {
             setTextColor(Color.BLACK)
         }, top = 16)
 
-        section("Recent commands")
+        section("Recent commands", key = "open_log", defaultOpen = true)
         add(help("What the watch sent and how it went, newest first. Useful when something does not work."))
         log = TextView(this).apply {
             setTextIsSelectable(true)
@@ -164,11 +178,17 @@ class MainActivity : Activity() {
         add(button("Check watch connection") {
             WatchLink.check(this)
             refreshLog()
-            // The watch's answer takes a moment.
+            // The watch's answer takes a moment; after 10 s without one the check logs that too.
             log.postDelayed({ refreshLog() }, 3000)
+            log.postDelayed({ refreshLog() }, 11000)
         }, top = 8)
         add(help("\"Connected\" only means Bluetooth. The watch app is reachable only if \"watch answered\" appears."))
         add(log, top = 8)
+        logMore = button("") {
+            showAllLog = !showAllLog
+            refreshLog()
+        }.also { add(it, top = 8) }
+        updateSummaries()
 
         container = root
         add(help(DISCLAIMER).apply {
@@ -224,6 +244,7 @@ class MainActivity : Activity() {
         config.clientSecret = clientSecret.text.toString()
         config.country = country.text.toString()
         config.autoShuffle = autoShuffle.isChecked
+        updateSummaries()
         WatchService.start(this) // picks up new API credentials
         Toast.makeText(this, "Saved", Toast.LENGTH_SHORT).show()
     }
@@ -254,20 +275,41 @@ class MainActivity : Activity() {
         }
     }
 
-    /** One checkbox per genre: the chosen ones first, in their order, then the rest of Tidal's list. */
     private fun showGenres(available: List<String>, chosen: List<String>) {
-        genres.removeAllViews()
-        for (name in chosen + available.filter { it !in chosen }) {
-            genres.addView(CheckBox(this).apply {
-                text = name
-                isChecked = name in chosen
-                buttonTintList = ColorStateList.valueOf(ACCENT)
-            })
-        }
+        availableGenres = available
+        chosenGenres = chosen
+        genreSummary.text = chosen.joinToString(", ").ifEmpty { "No genres chosen" }
+        updateSummaries()
     }
 
-    private fun checkedGenres(): List<String> =
-        (0 until genres.childCount).map { genres.getChildAt(it) as CheckBox }.filter { it.isChecked }.map { it.text.toString() }
+    private fun checkedGenres(): List<String> = chosenGenres
+
+    /**
+     * The full checklist in a pop-up: the chosen genres first, in their order, then the rest of Tidal's list.
+     * Genres that stay ticked keep their place on the watch; newly ticked ones go at the end.
+     */
+    private fun editGenres() {
+        val items = chosenGenres + availableGenres.filter { it !in chosenGenres }
+        val checked = BooleanArray(items.size) { items[it] in chosenGenres }
+        AlertDialog.Builder(this)
+            .setTitle("Genres on the watch")
+            .setMultiChoiceItems(items.toTypedArray(), checked) { _, i, on -> checked[i] = on }
+            .setPositiveButton("OK") { _, _ ->
+                val picked = items.filterIndexed { i, _ -> checked[i] }
+                showGenres(availableGenres, chosenGenres.filter { it in picked } + picked.filter { it !in chosenGenres })
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    /** The one-line summaries shown next to a folded section's heading. */
+    private fun updateSummaries() {
+        if (!::radioSection.isInitialized || !::optionsSection.isInitialized) return
+        listsSection.summary.text = "${chosenGenres.size} genres"
+        val radio = clientId.text.isNotBlank() && clientSecret.text.isNotBlank()
+        radioSection.summary.text = if (radio) "✓ Set up" else "Not set up"
+        optionsSection.summary.text = "Auto-shuffle " + if (autoShuffle.isChecked) "on" else "off"
+    }
 
     private fun openAppInfo(pkg: String) {
         startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$pkg")))
@@ -282,7 +324,8 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun updateSetupStatus() {
+    /** Returns true if all three settings are in place. */
+    private fun updateSetupStatus(): Boolean {
         val access = TidalAccessListener.isEnabled(this)
         val power = getSystemService(PowerManager::class.java)
         val battery = power.isIgnoringBatteryOptimizations(packageName)
@@ -301,10 +344,19 @@ class MainActivity : Activity() {
             text.setSpan(ForegroundColorSpan(if (ok) ACCENT else WARNING), start, text.length, 0)
         }
         setupStatus.text = text
+        val allOk = lines.all { it.first }
+        setupSection.summary.text = if (allOk) "✓ All set" else "✗ Needs attention"
+        setupSection.summary.setTextColor(if (allOk) ACCENT else WARNING)
+        // Something went missing: show the buttons again.
+        if (!allOk) setupSection.open = true
+        return allOk
     }
 
     private fun refreshLog() {
-        log.text = CommandLog.read(this).joinToString("\n").ifEmpty { "No commands yet." }
+        val lines = CommandLog.read(this)
+        log.text = (if (showAllLog) lines else lines.take(LOG_LINES)).joinToString("\n").ifEmpty { "No commands yet." }
+        logMore.visibility = if (lines.size > LOG_LINES) View.VISIBLE else View.GONE
+        logMore.text = if (showAllLog) "Show fewer" else "Show all (${lines.size})"
     }
 
     // --- layout helpers ---
@@ -317,27 +369,75 @@ class MainActivity : Activity() {
         })
     }
 
-    /** Starts a section: a rounded card with a heading; following add() calls go into it. */
-    private fun section(title: String): LinearLayout {
-        val card = LinearLayout(this).apply {
+    /** A rounded card with a heading. A collapsible one folds away when its heading is tapped. */
+    private inner class Section(private val title: String, private val collapsible: Boolean) {
+        val card = LinearLayout(this@MainActivity).apply {
             orientation = LinearLayout.VERTICAL
             background = GradientDrawable().apply {
                 setColor(CARD)
                 cornerRadius = dp(16).toFloat()
             }
-            setPadding(dp(16), dp(12), dp(16), dp(16))
+            setPadding(dp(16), dp(12), dp(16), dp(12))
         }
-        root.addView(card, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
-            topMargin = dp(16)
-        })
-        container = card
-        add(TextView(this).apply {
-            text = title
+        val body = LinearLayout(this@MainActivity).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(0, 0, 0, dp(4))
+        }
+        private val heading = TextView(this@MainActivity).apply {
             textSize = 18f
             setTextColor(ACCENT)
             setTypeface(typeface, Typeface.BOLD)
-        }, top = 0)
-        return card
+        }
+
+        /** Shown next to the heading while the section is folded. */
+        val summary = TextView(this@MainActivity).apply {
+            textSize = 13f
+            setTextColor(MUTED)
+            gravity = Gravity.END
+        }
+        var onToggle: ((Boolean) -> Unit)? = null
+
+        var open = true
+            set(value) {
+                field = value
+                body.visibility = if (value) View.VISIBLE else View.GONE
+                summary.visibility = if (value) View.GONE else View.VISIBLE
+                heading.text = if (collapsible) (if (value) "▾  " else "▸  ") + title else title
+            }
+
+        init {
+            val row = LinearLayout(this@MainActivity).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                addView(heading, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+                addView(summary, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+            }
+            if (collapsible) row.setOnClickListener {
+                open = !open
+                onToggle?.invoke(open)
+            }
+            card.addView(row)
+            card.addView(body)
+            open = true
+        }
+    }
+
+    /**
+     * Starts a section; following add() calls go into it. With a [key] it is collapsible and remembers
+     * whether it was left open or folded.
+     */
+    private fun section(title: String, collapsible: Boolean = false, key: String? = null, defaultOpen: Boolean = true): Section {
+        val s = Section(title, collapsible || key != null)
+        root.addView(s.card, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+            topMargin = dp(12)
+        })
+        container = s.body
+        if (key != null) {
+            val ui = getSharedPreferences("ui", MODE_PRIVATE)
+            s.open = ui.getBoolean(key, defaultOpen)
+            s.onToggle = { ui.edit().putBoolean(key, it).apply() }
+        }
+        return s
     }
 
     private fun label(text: String) = TextView(this).apply {
