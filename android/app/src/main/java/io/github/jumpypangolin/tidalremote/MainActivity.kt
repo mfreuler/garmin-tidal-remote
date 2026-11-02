@@ -58,9 +58,10 @@ class MainActivity : Activity() {
     private var availableGenres: List<String> = emptyList()
     private var chosenGenres: List<String> = emptyList()
     private lateinit var setupSection: Section
-    private lateinit var listsSection: Section
+    private lateinit var genresSection: Section
+    private lateinit var searchSection: Section
     private lateinit var radioSection: Section
-    private lateinit var optionsSection: Section
+    private lateinit var otherSection: Section
     private lateinit var logMore: Button
     private var showAllLog = false
     private lateinit var terms: EditText
@@ -85,93 +86,97 @@ class MainActivity : Activity() {
         }
         container = root
 
+        // Spacing, everywhere: 8 dp from a heading or between related items, 4 dp from a label to its
+        // field or text, 16 dp between groups inside a card, 12 dp between cards.
         add(TextView(this).apply {
             text = "Tidal Remote"
             textSize = 24f
-        })
-        add(help("Start Tidal playlists and control playback from your Garmin watch. Configure settings below and click Save. " +
-            "Updates will be reflected on the watch after closing and re-opening the app."), top = 8)
+        }, top = 0)
+        add(help("This is the companion app for the \"Garmin-Tidal Remote\" app for Garmin watches on GitHub. " +
+            "Configure settings below to control Tidal from your watch. " +
+            "Saved changes will be reflected after the next start of the watch app."), top = 8)
 
         // Shown only while Tidal refuses: the first-time steps Android and Tidal don't make obvious.
         gettingStarted = section("Getting started").card
-        add(help("Tidal Remote can't reach Tidal yet. Do these steps once:"))
+        add(help("Tidal Remote can't reach Tidal yet. Do these steps once:"), top = 0)
         add(help("1. Turn on notification access for Tidal Remote. If Android says \"Restricted setting\", " +
-            "open App info, tap ⋮ (top right) → Allow restricted settings, then try again."), top = 8)
+            "open App info, tap ⋮ (top right) → Allow restricted settings, then try again."), top = 16)
         add(button("Notification access") { startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) }, top = 8)
-        add(button("App info: Tidal Remote") { openAppInfo(packageName) })
+        add(button("App info: Tidal Remote") { openAppInfo(packageName) }, top = 8)
         add(help("2. Force-stop Tidal once, so it accepts Tidal Remote: App info → Force stop. " +
-            "Android doesn't let other apps do this."), top = 12)
+            "Android doesn't let other apps do this."), top = 16)
         add(button("App info: Tidal") { openAppInfo(TidalController.TIDAL) }, top = 8)
-        add(help("3. Come back here. The genres load by themselves and this box disappears."), top = 12)
+        add(help("3. Come back here. The genres load by themselves and this box disappears."), top = 16)
         add(button("Try again") { loadFromTidal() }, top = 8)
         gettingStarted.visibility = View.GONE
 
         // Open while something is missing; once all is set it folds away to one line.
         setupSection = section("1. Phone setup", collapsible = true)
         add(help("Notification access is mandatory for Tidal to accept commands. Battery exception is strongly recommended " +
-            "for Tidal Remote and Tidal to avoid time-out issues after a few hours of inactivity."))
+            "for Tidal Remote and Tidal to avoid time-out issues after a few hours of inactivity."), top = 0)
         add(button("Allow access to Tidal notifications") {
             startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
-        }, top = 12)
+        }, top = 8)
         add(button("Allow Tidal Remote unrestricted (battery)") { requestBatteryExemption() }, top = 8)
         // Android only lets an app request this for itself, so for Tidal open its App info page.
         add(button("Allow Tidal unrestricted (battery)") { openAppInfo(TidalController.TIDAL) }, top = 8)
         setupStatus = help("").also { add(it, top = 8) }
         setupSection.open = !updateSetupStatus()
 
-        listsSection = section("2. Watch lists", key = "open_lists", defaultOpen = true)
-        add(help("\"My Mix\" and \"Favorites\" are populated automatically from Tidal."))
-        add(label("Genres"), top = 12)
-        add(help("The genres available on the watch. The app plays a random playlist from the chosen genre."))
+        // Same order and names as the watch menu.
+        genresSection = section("2. Genres", key = "open_genres", defaultOpen = true)
+        add(help("The genres on the watch. The watch plays a random playlist from the chosen genre. " +
+            "My Mix and Favorites need no setup: they come from Tidal."), top = 0)
         genreSummary = TextView(this).apply { textSize = 15f }.also { add(it, top = 8) }
         add(button("Edit genres") { editGenres() }, top = 8)
         genreInfo = help("").also {
             it.visibility = View.GONE
-            add(it)
+            add(it, top = 8)
         }
         showGenres(config.cachedGenres, config.genres)
         loadFromTidal()
-        add(label("Search terms"), top = 16)
-        add(help("One per line, any words. The watch plays a random playlist from Tidal's search results."))
-        terms = multiline(config.searchTerms).also { add(it) }
 
-        radioSection = section("3. Track radio (optional)", key = "open_radio", defaultOpen = false)
-        add(help("Only needed for Track radio. Sign in at developer.tidal.com with your Tidal account, " +
-            "create an app, and copy its Client ID and Client secret here."))
-        add(label("Client ID"))
-        clientId = field("Client ID", config.clientId, false).also { add(it) }
+        searchSection = section("3. Search", key = "open_search", defaultOpen = true)
+        add(help("Search terms, one per line, any words. The watch plays a random playlist from Tidal's search results."), top = 0)
+        terms = multiline(config.searchTerms).also { add(it, top = 8) }
+
+        radioSection = section("4. Track radio", key = "open_radio", defaultOpen = false)
+        add(help("Optional, only needed for Track radio. Sign in at developer.tidal.com with your Tidal account, " +
+            "create an app, and copy its Client ID and Client secret here."), top = 0)
+        add(label("Client ID"), top = 16)
+        clientId = field("Client ID", config.clientId, false).also { add(it, top = 4) }
         add(label("Client secret"), top = 16)
-        clientSecret = field("Client secret", config.clientSecret, true).also { add(it) }
+        clientSecret = field("Client secret", config.clientSecret, true).also { add(it, top = 4) }
         add(label("Country of your Tidal account"), top = 16)
         add(help("The two-letter code of the country where you signed up for Tidal, for example CH (Switzerland), " +
             "DE (Germany), GB (United Kingdom), BR (Brazil), US (USA). Pre-filled from your SIM card. " +
-            "Track radio looks up its songs for this country."))
-        country = field("CH", config.country, false).also { add(it) }
+            "Track radio looks up its songs for this country."), top = 4)
+        country = field("CH", config.country, false).also { add(it, top = 8) }
 
-        optionsSection = section("Options", key = "open_options", defaultOpen = false)
-        add(label("Permanent notification"))
+        otherSection = section("Other settings", key = "open_options", defaultOpen = false)
+        add(label("Permanent notification"), top = 0)
         add(help("Android shows a notification while the app listens for the watch. You can hide it, but some phones " +
-            "may stop the app in the background without it. If the watch can't reach the phone, show it again."))
-        add(button("Hide or show the notification") { startActivity(WatchService.channelSettings(this)) }, top = 12)
+            "may stop the app in the background without it. If the watch can't reach the phone, show it again."), top = 4)
+        add(button("Hide or show the notification") { startActivity(WatchService.channelSettings(this)) }, top = 8)
         add(label("Auto-shuffle"), top = 16)
-        add(help("Switches shuffle on whenever the watch starts a new playlist."))
+        add(help("Switches shuffle on whenever the watch starts a new playlist."), top = 4)
         autoShuffle = CheckBox(this).apply {
             text = "Auto-shuffle new playlists"
             isChecked = config.autoShuffle
             // The default tint is black on this dark screen, which hides the tick.
             buttonTintList = ColorStateList.valueOf(ACCENT)
         }
-        add(autoShuffle, top = 8)
+        add(autoShuffle, top = 4)
         // Outside the cards, so it stands on its own.
         container = root
         add(button("Save") { save() }.apply {
             // Highlighted: settings only take effect after saving.
             backgroundTintList = ColorStateList.valueOf(ACCENT)
             setTextColor(Color.BLACK)
-        }, top = 16)
+        }, top = 12)
 
-        section("Recent commands", key = "open_log", defaultOpen = true)
-        add(help("What the watch sent and how it went, newest first. Useful when something does not work."))
+        section("Debugging", key = "open_log", defaultOpen = true)
+        add(help("What the watch sent and how it went, newest first. Useful when something does not work."), top = 0)
         log = TextView(this).apply {
             setTextIsSelectable(true)
             typeface = Typeface.MONOSPACE
@@ -185,7 +190,7 @@ class MainActivity : Activity() {
             log.postDelayed({ refreshLog() }, 3000)
             log.postDelayed({ refreshLog() }, 11000)
         }, top = 8)
-        add(help("\"Connected\" only means Bluetooth. The watch app is reachable only if \"watch answered\" appears."))
+        add(help("\"Connected\" only means Bluetooth. The watch app is reachable only if \"watch answered\" appears."), top = 8)
         add(log, top = 8)
         logMore = button("") {
             showAllLog = !showAllLog
@@ -309,11 +314,12 @@ class MainActivity : Activity() {
 
     /** The one-line summaries shown next to a folded section's heading. */
     private fun updateSummaries() {
-        if (!::radioSection.isInitialized || !::optionsSection.isInitialized) return
-        listsSection.summary.text = "${chosenGenres.size} genres"
+        if (!::radioSection.isInitialized || !::otherSection.isInitialized) return
+        genresSection.summary.text = "${chosenGenres.size} genres"
+        searchSection.summary.text = "${terms.text.lines().count { it.isNotBlank() }} search terms"
         val radio = clientId.text.isNotBlank() && clientSecret.text.isNotBlank()
         radioSection.summary.text = if (radio) "✓ Set up" else "Not set up"
-        optionsSection.summary.text = "Auto-shuffle " + if (autoShuffle.isChecked) "on" else "off"
+        otherSection.summary.text = "Auto-shuffle " + if (autoShuffle.isChecked) "on" else "off"
     }
 
     private fun openAppInfo(pkg: String) {
@@ -382,11 +388,11 @@ class MainActivity : Activity() {
                 setColor(CARD)
                 cornerRadius = dp(16).toFloat()
             }
-            setPadding(dp(16), dp(12), dp(16), dp(12))
+            setPadding(dp(16), dp(14), dp(16), dp(14))
         }
         val body = LinearLayout(this@MainActivity).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(0, 0, 0, dp(4))
+            setPadding(0, dp(8), 0, 0)
         }
         private val heading = TextView(this@MainActivity).apply {
             textSize = 18f
@@ -449,7 +455,7 @@ class MainActivity : Activity() {
         this.text = text
         textSize = 15f
         setTypeface(typeface, Typeface.BOLD)
-    }.also { it.setPadding(0, dp(8), 0, 0) }
+    }
 
     private fun help(text: String) = TextView(this).apply {
         this.text = text

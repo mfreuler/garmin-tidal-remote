@@ -155,9 +155,9 @@ Notification access is mandatory; the two battery settings are strongly recommen
 
 All lists are edited in the companion app; the watch app never needs a rebuild for this.
 
-- **My Mix**: comes from Tidal automatically.
-- **Genres**: tick the genres you want. The list is loaded from Tidal each time you open the app. Ticked genres are shown first, in the order they appear on the watch; a newly ticked genre is added at the end.
-- **Search terms**: one per line, any words.
+- **My Mix** and **Favorites**: come from Tidal automatically.
+- **Genres**: tap **Edit genres** and tick the genres you want. The list is loaded from Tidal each time you open the app. Ticked genres are shown first, in the order they appear on the watch; a newly ticked genre is added at the end.
+- **Search**: search terms, one per line, any words.
 
 Tap **Save**. The watch picks up the change the next time you close and reopen the watch app.
 
@@ -182,13 +182,13 @@ The Bluetooth hop from the watch to the phone comes on top; in everyday use it w
 - **Notification access is required**, because Tidal only accepts callers that have it.
 - **No hot key.** Garmin does not allow Connect IQ apps on the watch's hot keys. Use the glance list instead.
 - **Previous track** first jumps to the start of the current song if it has played for a few seconds; press it again for the song before.
-- **Auto-shuffle** (Options) switches shuffle on after a new playlist starts. The first song is still the playlist's first; only the songs after it are shuffled.
+- **Auto-shuffle** (Other settings) switches shuffle on after a new playlist starts. The first song is still the playlist's first; only the songs after it are shuffled.
 - **Menu changes** reach the watch only after the watch app is closed and reopened.
 - **Track radio** needs the Tidal developer login. Without it, the item is hidden on the watch.
 
 ## Troubleshooting
 
-The **Recent commands** section at the bottom of the companion app lists what the watch sent and how it went.
+The **Debugging** section at the bottom of the companion app lists what the watch sent and how it went.
 
 | Watch shows | Likely cause |
 |-------------|--------------|
