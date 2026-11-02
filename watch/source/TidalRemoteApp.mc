@@ -21,10 +21,11 @@ class TidalRemoteApp extends Application.AppBase {
     // Created in getInitialView: the glance line can't load the menu classes.
     private var _title as StatusTitle?;
     private var _timer as Timer.Timer?;
-    // The open My Mix / Genre / Search list, so a fresh copy from the phone can replace its items.
-    private var _list as WatchUi.Menu2?;
-    private var _listKey as String?;
-    private var _listNames as Array?;
+    // The My Mix / Genre / Search list on screen, so a fresh copy from the phone can replace it.
+    private var _listTitle as String?;
+    private var _listCommand as String = "";
+    private var _listKey as String = "";
+    private var _listNames as Array = [];
 
     function initialize() {
         AppBase.initialize();
@@ -69,33 +70,30 @@ class TidalRemoteApp extends Application.AppBase {
         Communications.transmit(["playlists", offset.toString()], null, new CommandListener(view));
     }
 
-    function showingList(menu as WatchUi.Menu2, key as String) as Void {
-        _list = menu;
+    function showingList(title as String, command as String, key as String) as Void {
+        _listTitle = title;
+        _listCommand = command;
         _listKey = key;
         _listNames = Lists.get(key);
     }
 
-    //! Rebuilds the open list if the phone's copy differs from what it shows.
+    function leftList() as Void {
+        _listTitle = null;
+    }
+
+    //! Swaps in a new list if the phone's copy differs. A new menu instead of deleting items from the
+    //! open one: removing items from a menu on screen crashed the app.
     private function refreshList() as Void {
-        var menu = _list;
-        var key = _listKey;
-        var old = _listNames;
-        if (menu == null || key == null || old == null) {
+        var title = _listTitle;
+        if (title == null) {
             return;
         }
-        var names = Lists.get(key);
-        if (sameNames(old, names)) {
+        var names = Lists.get(_listKey);
+        if (sameNames(_listNames, names)) {
             return;
-        }
-        for (var i = old.size() - 1; i >= 0; i--) {
-            menu.deleteItem(i);
-        }
-        for (var i = 0; i < names.size(); i++) {
-            var name = names[i].toString();
-            menu.addItem(new WatchUi.MenuItem(name, null, name, null));
         }
         _listNames = names;
-        WatchUi.requestUpdate();
+        WatchUi.switchToView(buildList(title, _listKey), new ListDelegate(_listCommand), WatchUi.SLIDE_IMMEDIATE);
     }
 
     private function sameNames(a as Array, b as Array) as Boolean {

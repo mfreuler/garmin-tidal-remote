@@ -96,15 +96,9 @@ class MainMenuDelegate extends WatchUi.Menu2InputDelegate {
     }
 
     private function pushList(title as String, command as String, key as String) as Void {
-        var menu = new WatchUi.Menu2({ :title => title });
-        var names = Lists.get(key);
-        for (var i = 0; i < names.size(); i++) {
-            var name = names[i].toString();
-            menu.addItem(new WatchUi.MenuItem(name, null, name, null));
-        }
-        WatchUi.pushView(menu, new ListDelegate(command), WatchUi.SLIDE_LEFT);
+        WatchUi.pushView(buildList(title, key), new ListDelegate(command), WatchUi.SLIDE_LEFT);
         // The stored list is shown at once; the phone's current one replaces it when it arrives.
-        getTidalApp().showingList(menu, key);
+        getTidalApp().showingList(title, command, key);
         Communications.transmit(["menu"], null, new SilentListener());
     }
 }
@@ -139,7 +133,18 @@ class PlaylistDelegate extends WatchUi.Menu2InputDelegate {
     }
 }
 
+function buildList(title as String, key as String) as WatchUi.Menu2 {
+    var menu = new WatchUi.Menu2({ :title => title });
+    var names = Lists.get(key);
+    for (var i = 0; i < names.size(); i++) {
+        var name = names[i].toString();
+        menu.addItem(new WatchUi.MenuItem(name, null, name, null));
+    }
+    return menu;
+}
+
 //! A list entry was picked: send [command, name] to the phone.
+//! Both ways of leaving the list tell the app, so it never swaps in a fresh copy over another screen.
 class ListDelegate extends WatchUi.Menu2InputDelegate {
     private var _command as String;
 
@@ -149,7 +154,13 @@ class ListDelegate extends WatchUi.Menu2InputDelegate {
     }
 
     function onSelect(item as WatchUi.MenuItem) as Void {
+        getTidalApp().leftList();
         var name = item.getId() as String;
         getTidalApp().sendCommand([_command, name], name);
+    }
+
+    function onBack() as Void {
+        getTidalApp().leftList();
+        WatchUi.popView(WatchUi.SLIDE_RIGHT);
     }
 }
