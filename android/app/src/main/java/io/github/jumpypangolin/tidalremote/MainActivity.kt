@@ -125,7 +125,10 @@ class MainActivity : Activity() {
         add(help("The genres available on the watch. The app plays a random playlist from the chosen genre."))
         genreSummary = TextView(this).apply { textSize = 15f }.also { add(it, top = 8) }
         add(button("Edit genres") { editGenres() }, top = 8)
-        genreInfo = help("").also { add(it) }
+        genreInfo = help("").also {
+            it.visibility = View.GONE
+            add(it)
+        }
         showGenres(config.cachedGenres, config.genres)
         loadFromTidal()
         add(label("Search terms"), top = 16)
@@ -262,11 +265,13 @@ class MainActivity : Activity() {
                     showGenres(available, checkedGenres())
                 }
                 genreInfo.text = ""
+                genreInfo.visibility = View.GONE
                 tidalFailed = false
                 gettingStarted.visibility = View.GONE
                 tidal.mixNames().let { if (it.isNotEmpty()) config.cachedMixes = it }
             } catch (e: Exception) {
                 genreInfo.text = "Could not load Tidal's genres (${e.message ?: e.javaClass.simpleName}). Showing the last known list."
+                genreInfo.visibility = View.VISIBLE
                 tidalFailed = true
                 gettingStarted.visibility = View.VISIBLE
             } finally {
