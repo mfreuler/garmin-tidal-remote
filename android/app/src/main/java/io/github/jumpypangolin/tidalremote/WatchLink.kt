@@ -4,6 +4,7 @@ import android.content.Context
 import com.garmin.android.connectiq.ConnectIQ
 import com.garmin.android.connectiq.IQApp
 import com.garmin.android.connectiq.IQDevice
+import com.garmin.android.connectiq.exception.InvalidStateException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -28,31 +29,64 @@ object WatchLink {
     private val apps = Config.WATCH_APP_IDS.map { IQApp(it) }
     private var ciq: ConnectIQ? = null
     private var handler: CommandHandler? = null
+    /** Bumped on every start and stop, so callbacks from an old connection are ignored. */
+    private var generation = 0
+    private var ready = false
 
     /** Must be called on the main thread. */
     fun start(context: Context) {
         val ctx = context.applicationContext
         stop(ctx)
         handler = CommandHandler(ctx)
+        val gen = ++generation
         val instance = ConnectIQ.getInstance(ctx, connectType)
         ciq = instance
         instance.initialize(ctx, false, object : ConnectIQ.ConnectIQListener {
             override fun onSdkReady() {
+                if (gen != generation) return
+                ready = true
                 CommandLog.add(ctx, "Connect IQ ready")
-                if (!removeBinderRegistration(instance, ctx)) registerDevices(instance, ctx)
+                if (!removeBinderRegistration(instance, ctx)) registerDevices(instance, ctx, gen)
             }
 
             override fun onInitializeError(status: ConnectIQ.IQSdkErrorStatus) {
+                if (gen != generation) return
                 CommandLog.add(ctx, "Connect IQ error: $status")
+                reconnectLater(ctx, gen, 30_000L)
             }
 
+            // Also when Garmin Connect is killed, e.g. by its own overnight update. Without a new
+            // connection, watch messages still arrive but every reply fails (InvalidStateException).
             override fun onSdkShutDown() {
-                CommandLog.add(ctx, "Connect IQ shut down")
+                if (gen != generation) return
+                ready = false
+                CommandLog.add(ctx, "Connect IQ shut down, reconnecting")
+                reconnectLater(ctx, gen, 5_000L)
             }
         })
     }
 
+    private fun reconnectLater(ctx: Context, gen: Int, wait: Long) {
+        scope.launch {
+            delay(wait)
+            if (gen == generation) start(ctx)
+        }
+    }
+
+    /** Reconnects now and waits up to 5 s for the SDK, for a reply that just failed. */
+    private suspend fun reconnectNow(ctx: Context): ConnectIQ? {
+        CommandLog.add(ctx, "Lost Garmin Connect, reconnecting")
+        start(ctx)
+        repeat(50) {
+            if (ready) return ciq
+            delay(100)
+        }
+        return null
+    }
+
     fun stop(ctx: Context) {
+        generation++
+        ready = false
         try {
             ciq?.unregisterAllForEvents()
             ciq?.shutdown(ctx)
@@ -85,7 +119,7 @@ object WatchLink {
         return true
     }
 
-    private fun registerDevices(instance: ConnectIQ, ctx: Context) {
+    private fun registerDevices(instance: ConnectIQ, ctx: Context, gen: Int) {
         val devices = try {
             instance.knownDevices ?: emptyList()
         } catch (e: Exception) {
@@ -97,13 +131,14 @@ object WatchLink {
             CommandLog.add(ctx, "Listening to ${device.friendlyName}")
             // Logged so the command list shows when Garmin Connect loses the watch.
             instance.registerForDeviceEvents(device) { _, status ->
+                if (gen != generation) return@registerForDeviceEvents
                 CommandLog.add(ctx, "${device.friendlyName}: ${status.name.lowercase().replace('_', ' ')}")
             }
             for (app in apps) {
-                register(instance, ctx, device, app, app)
+                register(instance, ctx, device, app, app, gen)
             }
             // The simulator delivers messages with an empty app id instead of the real one.
-            if (connectType == ConnectIQ.IQConnectType.TETHERED) register(instance, ctx, device, IQApp(""), apps[0])
+            if (connectType == ConnectIQ.IQConnectType.TETHERED) register(instance, ctx, device, IQApp(""), apps[0], gen)
         }
     }
 
@@ -134,14 +169,21 @@ object WatchLink {
                     if (!answered) CommandLog.add(ctx, "Check: NO answer from the watch. Restart the watch")
                 }
             }
+        } catch (e: InvalidStateException) {
+            CommandLog.add(ctx, "Check: lost Garmin Connect, reconnecting. Check again in a few seconds")
+            start(ctx)
         } catch (e: Exception) {
             CommandLog.add(ctx, "Check failed: ${e.javaClass.simpleName}")
         }
     }
 
-    /** Listens for messages from [listenApp] and sends the replies to [replyApp]. */
-    private fun register(instance: ConnectIQ, ctx: Context, device: IQDevice, listenApp: IQApp, replyApp: IQApp) {
+    /**
+     * Listens for messages from [listenApp] and sends the replies to [replyApp]. A lost SDK can't clean up
+     * its old message receiver, so listeners from an earlier connection ignore messages (else commands run twice).
+     */
+    private fun register(instance: ConnectIQ, ctx: Context, device: IQDevice, listenApp: IQApp, replyApp: IQApp, gen: Int) {
         instance.registerForAppEvents(device, listenApp) { dev, _, message, status ->
+            if (gen != generation) return@registerForAppEvents
             if (status == ConnectIQ.IQMessageStatus.SUCCESS) {
                 onMessage(instance, ctx, dev, replyApp, message)
             } else {
@@ -157,16 +199,27 @@ object WatchLink {
         val handler = handler ?: return
         scope.launch {
             val reply = handler.handle(parts)
-            // Off the main thread: in simulator mode the SDK writes to a network socket directly.
-            withContext(Dispatchers.IO) {
-                try {
-                    instance.sendMessage(device, app, reply) { _, _, status ->
-                        if (status != ConnectIQ.IQMessageStatus.SUCCESS) CommandLog.add(ctx, "Reply failed: $status")
-                    }
-                } catch (e: Exception) {
-                    CommandLog.add(ctx, "Reply failed: ${e.javaClass.simpleName}")
-                }
-            }
+            if (send(ctx, ciq ?: instance, device, app, reply)) return@launch
+            // The link to Garmin Connect broke (incoming messages can still arrive): reconnect, send again.
+            val fresh = reconnectNow(ctx) ?: return@launch CommandLog.add(ctx, "Reply failed: Garmin Connect not ready")
+            send(ctx, fresh, device, app, reply)
         }
     }
+
+    /** Returns false only if the SDK is not connected to Garmin Connect. */
+    private suspend fun send(ctx: Context, instance: ConnectIQ, device: IQDevice, app: IQApp, reply: List<Any>): Boolean =
+        // Off the main thread: in simulator mode the SDK writes to a network socket directly.
+        withContext(Dispatchers.IO) {
+            try {
+                instance.sendMessage(device, app, reply) { _, _, status ->
+                    if (status != ConnectIQ.IQMessageStatus.SUCCESS) CommandLog.add(ctx, "Reply failed: $status")
+                }
+                true
+            } catch (e: InvalidStateException) {
+                false
+            } catch (e: Exception) {
+                CommandLog.add(ctx, "Reply failed: ${e.javaClass.simpleName}")
+                true
+            }
+        }
 }
