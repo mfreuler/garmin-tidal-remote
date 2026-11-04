@@ -152,7 +152,7 @@ Notification access is mandatory; the two battery settings are strongly recommen
 
 ### 4. Track radio (optional)
 1. Sign in at [developer.tidal.com](https://developer.tidal.com) with your Tidal account and create an app.
-2. Copy its **Client ID** and **Client secret** into section **3. Track radio** of the companion app.
+2. Copy its **Client ID** and **Client secret** into section **5. Track radio** of the companion app.
 3. Check the **country**: the two-letter code of the country where you signed up for Tidal (CH, DE, GB, BR, US, …). It is pre-filled from the SIM card.
 4. Tap **Save**.
 
@@ -170,7 +170,7 @@ All lists are edited in the companion app; the watch app never needs a rebuild f
 - **Genres**: tap **Edit genres** and tick the genres you want. The list is loaded from Tidal each time you open the app. Ticked genres are shown first, in the order they appear on the watch; a newly ticked genre is added at the end.
 - **Search**: search terms, one per line, any words.
 
-Tap **Save**. The watch picks up the change the next time you close and reopen the watch app.
+Tap **Save**. The watch picks up the change the next time you open that list on the watch.
 
 ## Measured delays
 
@@ -194,8 +194,8 @@ The Bluetooth hop from the watch to the phone comes on top; in everyday use it w
 - **No hot key.** Garmin does not allow Connect IQ apps on the watch's hot keys. Use the glance list instead.
 - **Previous track** first jumps to the start of the current song if it has played for a few seconds; press it again for the song before.
 - **Auto-shuffle** (Other settings) switches shuffle on after a new playlist starts. The first song is still the playlist's first; only the songs after it are shuffled.
-- **Menu changes** reach the watch only after the watch app is closed and reopened.
 - **Track radio** needs the Tidal developer login. Without it, the item is hidden on the watch.
+- **Phone connection during activities.** Some watch power modes cut most of the phone connection after a while during an activity and keep only the music controls. The watch then still looks connected, but the app gets no reply. If that happens, set up a custom power mode with the phone connection on and use it for the activity. If it's already stuck, ending the activity or restarting the watch brings it back.
 
 ## Troubleshooting
 
@@ -204,11 +204,13 @@ The **Debugging** section at the bottom of the companion app lists what the watc
 | Watch shows | Likely cause |
 |-------------|--------------|
 | Phone not reachable | Watch not connected to the phone (Bluetooth, Garmin Connect). |
-| No reply from phone | The companion app is not running: open it once, check the battery setting, don't swipe the notification away. |
+| No reply from phone | The companion app is not running: open it once, check the battery setting, don't swipe the notification away. During an activity, see *Phone connection during activities* above. Right after Garmin Connect updated itself, the companion app reconnects on its own: try again after a few seconds. |
 | Tidal refused (notification access on?) | Notification access is off, or Tidal cached an earlier refusal: switch the access on (allow restricted settings first if Android asks) and force-stop Tidal once. |
 | No internet connection | The phone can't reach the internet. Commands that need Tidal's servers can't work until it's back. |
 | Genre not found / Mix not found | The name no longer matches Tidal: re-tick the genre in the companion app. |
 | Nothing playing in Tidal | Track radio and Now playing need a song loaded in Tidal. |
+
+In the companion app, **Check watch connection** asks the watch app for an answer. "Connected" alone only means Bluetooth; if the log then says the watch gave no answer, restart the watch.
 
 ## Project layout
 
