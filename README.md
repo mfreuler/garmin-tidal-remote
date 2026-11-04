@@ -2,6 +2,10 @@
 
 Start Tidal playlists and control playback on your Android phone from a Garmin watch. Useful at the gym or during a workout, when taking the phone out is impractical.
 
+| Main menu | My Mix list | Now playing | Companion app |
+|:---:|:---:|:---:|:---:|
+| <img src="docs/images/watch-menu.png" width="180" alt="Watch main menu"> | <img src="docs/images/watch-mymix.png" width="180" alt="My Mix list on the watch"> | <img src="docs/images/watch-nowplaying.png" width="180" alt="Now playing screen on the watch"> | <img src="docs/images/phone-app.png" width="180" alt="Companion app on the phone"> |
+
 Tidal has no Garmin app, and its public API cannot control playback. So the watch sends commands over the Garmin Connect connection to a small companion app on the phone, and that app tells the Tidal app what to play.
 
 ```
