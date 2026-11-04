@@ -115,11 +115,21 @@ Not on the list? See [Adding a watch model](docs/SETUP.md#adding-a-watch-model).
 Download the files from the [latest release](../../releases/latest).
 
 ### 1. Companion app on the phone
-1. Download `TidalRemote.apk` on the phone (or copy it there).
-2. Open it and allow installing apps from that source when asked. Android may warn that the app is unknown, since it doesn't come from the Play Store.
-3. Open **Tidal Remote** and allow notifications.
+Google Play Protect blocks this app when you open the downloaded APK from the browser or a file manager ("App blocked to protect your device"). It does that for any app from outside the Play Store that asks for sensitive access, and this one needs notification access (see step 3). Install it one of these ways:
 
-If Google Play Protect blocks the install ("App blocked to protect your device"): Play Protect stops apps from the browser that ask for sensitive access, and this app needs notification access (see step 3). Either turn off **Play Store → profile picture → Play Protect → ⚙ → Scan apps with Play Protect** while you install it and turn it back on afterwards, or install it with a file manager app that offers its own safety check, or use `adb install TidalRemote.apk`.
+**Option A: pause Play Protect while installing**
+1. In the **Play Store** app: profile picture → **Play Protect** → **⚙** → turn off **Scan apps with Play Protect**.
+2. Download `TidalRemote.apk` on the phone, open it and allow installing apps from that source when asked.
+3. Turn **Scan apps with Play Protect** back on.
+
+**Option B: install with [Obtainium](https://github.com/ImranR98/Obtainium)** (open source; also tells you about new versions)
+1. Install Obtainium from its [releases page](https://github.com/ImranR98/Obtainium/releases/latest). Most phones need `app-arm64-v8a-release.apk`.
+2. In Obtainium, tap **Add app**, paste `https://github.com/mfreuler/garmin-tidal-remote` and add it. If it asks which file to use, pick `TidalRemote.apk`.
+3. Tap **Install** and allow Obtainium to install unknown apps when asked.
+
+Developers can also use `adb install TidalRemote.apk`.
+
+Then open **Tidal Remote** and allow notifications.
 
 ### 2. Watch app
 1. Find your watch in the list above and download its `.prg` file.
