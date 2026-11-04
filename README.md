@@ -156,6 +156,17 @@ Notification access is mandatory; the two battery settings are strongly recommen
 3. Check the **country**: the two-letter code of the country where you signed up for Tidal (CH, DE, GB, BR, US, …). It is pre-filled from the SIM card.
 4. Tap **Save**.
 
+## Security and privacy
+
+Installing an app from outside the Play Store means trusting its developer, so here is what this one can do:
+
+- **Notification access:** required because Tidal only accepts commands from apps that have it. The app doesn't read or store any notifications.
+- **Internet:** used only for Track radio (Tidal's official API, `auth.tidal.com` and `openapi.tidal.com`) and to tell "no internet" apart from other errors (Google's standard check, `connectivitycheck.gstatic.com`). Nothing else is sent anywhere. There's no tracking or analytics.
+- **Your Tidal developer login** stays on the phone, in the app's private storage.
+- **Other permissions:** run in the background, show its notification, start after a reboot, and ask for the battery exemption.
+
+All source code is in this repository. If in doubt, review it yourself or have someone (or an AI assistant) do it, and build the app from source (see [Building it yourself](#building-it-yourself)). Only a build of your own guarantees the app matches the code you reviewed.
+
 ## Uninstalling
 
 - **Watch:** on the watch, open **Settings → Activities & Apps → Tidal Remote → Delete**. Don't try it in Garmin Connect on the phone: for sideloaded apps it shows "Unable to Update Settings", and the watch may restart.
